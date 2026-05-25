@@ -1,8 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 import { Game } from "../types/game";
 import { SearchBar } from "../components/SearchBar";
 import { GameGrid } from "../components/GameGrid";
-import { PlayCircle, Sparkles } from "lucide-react";
+import { PlayCircle, Sparkles, ListFilter } from "lucide-react";
 
 interface LibraryPageProps {
   games: Game[];
@@ -27,6 +27,8 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({
   onToggleHide,
   onOpenAddModal,
 }) => {
+  const [sortBy, setSortBy] = useState<string>("title-az");
+
   // Filter games based on filter tab & search query
   const getFilteredGames = () => {
     return games.filter((game) => {
@@ -51,7 +53,59 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({
     });
   };
 
+  const getSortedGames = (filtered: Game[]) => {
+    return [...filtered].sort((a, b) => {
+      switch (sortBy) {
+        case "title-za":
+          return b.title.localeCompare(a.title);
+
+        case "favorites-first":
+          if (a.favorite && !b.favorite) return -1;
+          if (!a.favorite && b.favorite) return 1;
+          return a.title.localeCompare(b.title);
+
+        case "recently-played": {
+          const dateA = a.last_played_at ? new Date(a.last_played_at).getTime() : 0;
+          const dateB = b.last_played_at ? new Date(b.last_played_at).getTime() : 0;
+          if (dateA === 0 && dateB > 0) return 1;
+          if (dateA > 0 && dateB === 0) return -1;
+          if (dateA === 0 && dateB === 0) return a.title.localeCompare(b.title);
+          return dateB - dateA;
+        }
+
+        case "most-played": {
+          const playtimeA = a.playtime_seconds || 0;
+          const playtimeB = b.playtime_seconds || 0;
+          if (playtimeA === 0 && playtimeB > 0) return 1;
+          if (playtimeA > 0 && playtimeB === 0) return -1;
+          if (playtimeA === 0 && playtimeB === 0) return a.title.localeCompare(b.title);
+          return playtimeB - playtimeA;
+        }
+
+        case "platform":
+          if (a.source !== b.source) {
+            return a.source.localeCompare(b.source);
+          }
+          return a.title.localeCompare(b.title);
+
+        case "recently-added": {
+          const createdA = a.created_at ? new Date(a.created_at).getTime() : 0;
+          const createdB = b.created_at ? new Date(b.created_at).getTime() : 0;
+          if (createdA === 0 && createdB > 0) return 1;
+          if (createdA > 0 && createdB === 0) return -1;
+          if (createdA === 0 && createdB === 0) return a.title.localeCompare(b.title);
+          return createdB - createdA;
+        }
+
+        case "title-az":
+        default:
+          return a.title.localeCompare(b.title);
+      }
+    });
+  };
+
   const filteredGames = getFilteredGames();
+  const sortedGames = getSortedGames(filteredGames);
 
   // Get human readable collection name
   const getFilterLabel = () => {
@@ -74,7 +128,7 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({
     <div className="flex-grow flex flex-col h-screen overflow-hidden select-none">
       
       {/* Top Header / Filter controls */}
-      <header className="px-8 py-5 border-b border-slate-800/40 bg-slate-950/20 flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0 flex-shrink-0">
+      <header className="px-8 py-5 border-b border-slate-800/40 bg-slate-950/20 flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0 flex-shrink-0">
         <div>
           <h2 className="text-xl font-extrabold text-slate-100 tracking-wide flex items-center space-x-2">
             <PlayCircle className="w-5 h-5 text-blue-500 mr-1" />
@@ -85,15 +139,33 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center space-x-4">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-3 sm:space-y-0 sm:space-x-3.5">
           <SearchBar
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
           />
           
+          {/* Rich Sort Select Picker */}
+          <div className="flex items-center bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 focus-within:border-blue-500/80 transition-all select-none">
+            <ListFilter className="w-4 h-4 text-textMuted mr-2 flex-shrink-0" />
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="bg-transparent text-xs font-bold focus:outline-none text-slate-200 cursor-pointer pr-1 w-full sm:w-auto"
+            >
+              <option value="title-az" className="bg-slate-950 text-slate-200">Title A–Z</option>
+              <option value="title-za" className="bg-slate-950 text-slate-200">Title Z–A</option>
+              <option value="favorites-first" className="bg-slate-950 text-slate-200">Favorites First</option>
+              <option value="recently-played" className="bg-slate-950 text-slate-200">Recently Played</option>
+              <option value="most-played" className="bg-slate-950 text-slate-200">Most Played</option>
+              <option value="platform" className="bg-slate-950 text-slate-200">Platform</option>
+              <option value="recently-added" className="bg-slate-950 text-slate-200">Recently Added</option>
+            </select>
+          </div>
+          
           <button
             onClick={onOpenAddModal}
-            className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold rounded-xl shadow-md shadow-indigo-950/50 transition-all transform active:scale-95 flex items-center space-x-1.5"
+            className="px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold rounded-xl shadow-md shadow-indigo-950/50 transition-all transform active:scale-95 flex items-center justify-center space-x-1.5 flex-shrink-0"
           >
             <Sparkles className="w-3.5 h-3.5" />
             <span>ADD GAME</span>
@@ -104,7 +176,7 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({
       {/* Main Game Grid Section */}
       <main className="flex-grow overflow-y-auto p-8">
         <GameGrid
-          games={filteredGames}
+          games={sortedGames}
           onLaunch={onLaunch}
           onSelect={onSelect}
           onToggleFavorite={onToggleFavorite}
