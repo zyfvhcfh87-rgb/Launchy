@@ -32,6 +32,10 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
   const [saveMessage, setSaveMessage] = useState("");
   const [isBackupExporting, setIsBackupExporting] = useState(false);
   const [isBackupImporting, setIsBackupImporting] = useState(false);
+  const [steamAutoSideload, setSteamAutoSideload] = useState(false);
+  const [isSideloading, setIsSideloading] = useState(false);
+  const [sideloadMessage, setSideloadMessage] = useState("");
+
 
   // Load API Keys on Mount
   useEffect(() => {
@@ -41,10 +45,13 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
         const sgKey = await invoke<string | null>("get_setting", { key: "steamgrid_api_key" });
         const twitchId = await invoke<string | null>("get_setting", { key: "igdb_client_id" });
         const twitchSecret = await invoke<string | null>("get_setting", { key: "igdb_client_secret" });
+        const autoSideloadVal = await invoke<string | null>("get_setting", { key: "steam_autosideload" });
 
         if (sgKey) setSteamGridKey(sgKey);
         if (twitchId) setIgdbClientId(twitchId);
         if (twitchSecret) setIgdbClientSecret(twitchSecret);
+        if (autoSideloadVal === "true") setSteamAutoSideload(true);
+
       } catch (err) {
         console.error("Failed to load settings:", err);
       }
@@ -116,6 +123,34 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
       setIsBackupImporting(false);
     }
   };
+
+  const handleToggleAutoSideload = async (checked: boolean) => {
+    try {
+      const { invoke } = await import("@tauri-apps/api/core");
+      setSteamAutoSideload(checked);
+      await invoke("set_setting", { key: "steam_autosideload", value: checked ? "true" : "false" });
+    } catch (err) {
+      console.error("Failed to update auto-sideload setting:", err);
+    }
+  };
+
+  const handleManualSideload = async () => {
+    try {
+      setIsSideloading(true);
+      setSideloadMessage("Sideloading non-Steam games...");
+      const { invoke } = await import("@tauri-apps/api/core");
+      await invoke("sideload_manual_games_to_steam");
+      setSideloadMessage("Sideload completed successfully!");
+      setTimeout(() => setSideloadMessage(""), 4000);
+    } catch (err) {
+      console.error("Failed to sideload manual games to Steam:", err);
+      setSideloadMessage(`Sideload failed: ${err}`);
+      setTimeout(() => setSideloadMessage(""), 5000);
+    } finally {
+      setIsSideloading(false);
+    }
+  };
+
 
   const handleBrowseFolder = async () => {
     try {
@@ -229,6 +264,91 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                   Online
                 </span>
               </div>
+
+              {/* GOG Galaxy Row */}
+              <div className="py-4 first:pt-0 last:pb-0 flex items-start justify-between border-t border-slate-800/40">
+                <div className="space-y-1.5 max-w-[80%]">
+                  <div className="flex items-center space-x-2.5">
+                    <svg className="w-4 h-4 text-purple-400" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm-1.8 4.8h3.6v1.8h-1.8v1.8h1.8v1.8h-3.6V4.8zm0 5.4h3.6v1.8h-1.8v1.8h1.8v1.8h-3.6v-5.4zm0 5.4h3.6v1.8h-1.8v1.8h1.8v1.8h-3.6v-5.4z" />
+                    </svg>
+                    <span className="font-bold text-sm text-slate-200">GOG Galaxy Integration</span>
+                  </div>
+                  <p className="text-xs text-textMuted">
+                    Scans Windows Registry keys for installed game IDs, paths, and executables. Launches games via GOG client URI protocols.
+                  </p>
+                  <div className="text-[10px] text-slate-500 font-mono select-text bg-slate-950/40 p-2 rounded-lg border border-slate-900/60 inline-block w-full">
+                    HKLM:\SOFTWARE\WOW6432Node\GOG.com\Games
+                  </div>
+                </div>
+                <span className="text-[10px] text-emerald-400 bg-emerald-950/40 border border-emerald-900/30 px-2 py-0.5 rounded font-bold uppercase tracking-wider select-none">
+                  Online
+                </span>
+              </div>
+
+              {/* Ubisoft Connect Row */}
+              <div className="py-4 first:pt-0 last:pb-0 flex items-start justify-between border-t border-slate-800/40">
+                <div className="space-y-1.5 max-w-[80%]">
+                  <div className="flex items-center space-x-2.5">
+                    <svg className="w-4 h-4 text-cyan-400" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 18c-3.313 0-6-2.687-6-6s2.687-6 6-6 6 2.687 6 6-2.687 6-6 6z" />
+                    </svg>
+                    <span className="font-bold text-sm text-slate-200">Ubisoft Connect Integration</span>
+                  </div>
+                  <p className="text-xs text-textMuted">
+                    Reads configurations from Ubisoft Connect manifests and cross-references installations inside the Windows Registry.
+                  </p>
+                  <div className="text-[10px] text-slate-500 font-mono select-text bg-slate-950/40 p-2 rounded-lg border border-slate-900/60 inline-block w-full">
+                    C:\Program Files (x86)\Ubisoft\Ubisoft Game Launcher\cache\configuration
+                  </div>
+                </div>
+                <span className="text-[10px] text-emerald-400 bg-emerald-950/40 border border-emerald-900/30 px-2 py-0.5 rounded font-bold uppercase tracking-wider select-none">
+                  Online
+                </span>
+              </div>
+
+              {/* EA App Row */}
+              <div className="py-4 first:pt-0 last:pb-0 flex items-start justify-between border-t border-slate-800/40">
+                <div className="space-y-1.5 max-w-[80%]">
+                  <div className="flex items-center space-x-2.5">
+                    <svg className="w-4 h-4 text-orange-500" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 0a12 12 0 1 0 12 12A12 12 0 0 0 12 0zm3 15h-6v-2h6v2zm0-4h-6V9h6v2z" />
+                    </svg>
+                    <span className="font-bold text-sm text-slate-200">EA App Integration</span>
+                  </div>
+                  <p className="text-xs text-textMuted">
+                    Queries subkeys under Origin Games registry nodes to retrieve game titles, folders, and launch Offer IDs.
+                  </p>
+                  <div className="text-[10px] text-slate-500 font-mono select-text bg-slate-950/40 p-2 rounded-lg border border-slate-900/60 inline-block w-full">
+                    HKLM:\SOFTWARE\WOW6432Node\Origin Games
+                  </div>
+                </div>
+                <span className="text-[10px] text-emerald-400 bg-emerald-950/40 border border-emerald-900/30 px-2 py-0.5 rounded font-bold uppercase tracking-wider select-none">
+                  Online
+                </span>
+              </div>
+
+              {/* itch.io Row */}
+              <div className="py-4 first:pt-0 last:pb-0 flex items-start justify-between border-t border-slate-800/40">
+                <div className="space-y-1.5 max-w-[80%]">
+                  <div className="flex items-center space-x-2.5">
+                    <svg className="w-4 h-4 text-rose-500" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 0L2.1 4.5v11.7L12 24l9.9-7.8V4.5L12 0zm5.4 14.4h-3.6v3.6h-3.6v-3.6H6.6v-3.6h3.6V7.2h3.6v3.6h3.6v3.6z" />
+                    </svg>
+                    <span className="font-bold text-sm text-slate-200">itch.io Integration</span>
+                  </div>
+                  <p className="text-xs text-textMuted">
+                    Connects directly to itch.io's sqlite database to parse downloaded indie game installation details.
+                  </p>
+                  <div className="text-[10px] text-slate-500 font-mono select-text bg-slate-950/40 p-2 rounded-lg border border-slate-900/60 inline-block w-full">
+                    %APPDATA%\itch\db\sqlite.db
+                  </div>
+                </div>
+                <span className="text-[10px] text-emerald-400 bg-emerald-950/40 border border-emerald-900/30 px-2 py-0.5 rounded font-bold uppercase tracking-wider select-none">
+                  Online
+                </span>
+              </div>
+
  
               {/* Manual Row */}
               <div className="py-4 first:pt-0 last:pb-0 flex items-start justify-between">
@@ -471,6 +591,54 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                 <span className="text-[10px] text-textMuted font-bold uppercase tracking-wider block">App Host Shell</span>
                 <p className="text-xs text-slate-300 font-semibold mt-1">Rust Backend | React + Vite UI</p>
               </div>
+            </div>
+          </div>
+
+          {/* Handheld & Sideloading Integration */}
+          <div className="bg-bgCard border border-slate-800/80 rounded-2xl p-5 shadow-xl space-y-4 animate-in fade-in duration-300">
+            <h3 className="text-sm font-bold text-slate-200 flex items-center space-x-2">
+              <Gamepad2 className="w-4.5 h-4.5 text-blue-400" />
+              <span>Handheld & Sideloading</span>
+            </h3>
+            <p className="text-xs text-textMuted leading-relaxed">
+              Sideload manually registered games directly to the local Steam Client's <code>shortcuts.vdf</code> configuration file. Highly recommended for Steam Deck, ROG Ally, Legion Go, or Big Picture Mode.
+            </p>
+
+            <div className="space-y-4 pt-1">
+              <div className="flex items-center justify-between p-3.5 bg-slate-950/50 border border-slate-900 rounded-xl">
+                <div className="space-y-0.5">
+                  <span className="text-xs font-bold text-slate-300 block">Auto-Sideload on Add</span>
+                  <span className="text-[10px] text-textMuted block">Sideload games as soon as added</span>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={steamAutoSideload}
+                    onChange={(e) => handleToggleAutoSideload(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-400 after:border-slate-350 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600 peer-checked:after:bg-white peer-checked:after:border-blue-600"></div>
+                </label>
+              </div>
+
+              <button
+                onClick={handleManualSideload}
+                disabled={isSideloading}
+                className="w-full bg-slate-900/60 hover:bg-slate-800 border border-slate-800 text-slate-200 hover:text-white px-4 py-2.5 rounded-xl font-bold text-xs tracking-wider transition-all duration-300 transform active:scale-95 flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-50"
+              >
+                <RefreshCw className={`w-4 h-4 ${isSideloading ? "animate-spin" : ""}`} />
+                <span>{isSideloading ? "SIDELOADING..." : "SIDELOAD STANDALONE GAMES"}</span>
+              </button>
+
+              {sideloadMessage && (
+                <div className={`p-2.5 text-center text-xs font-bold rounded-lg border transition-all animate-in fade-in select-none ${
+                  sideloadMessage.includes("failed") 
+                    ? "bg-red-950/40 border-red-900/30 text-red-400" 
+                    : "bg-emerald-950/40 border-emerald-900/30 text-emerald-400"
+                }`}>
+                  {sideloadMessage}
+                </div>
+              )}
             </div>
           </div>
 

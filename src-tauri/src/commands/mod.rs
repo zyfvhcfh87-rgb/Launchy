@@ -1,7 +1,7 @@
 use crate::db::{queries, establish_connection};
 use crate::models::game::{Game, LibrarySource};
-use crate::scanners::{steam, epic, manual};
-use crate::launcher::{steam_launcher, epic_launcher, manual_launcher};
+use crate::scanners::{steam, epic, manual, gog, uplay, ea, itch};
+use crate::launcher::{steam_launcher, epic_launcher, manual_launcher, gog_launcher, uplay_launcher, ea_launcher, itch_launcher};
 
 #[tauri::command]
 pub async fn get_games() -> Result<Vec<Game>, String> {
@@ -18,6 +18,18 @@ pub async fn scan_libraries() -> Result<Vec<Game>, String> {
     
     // Scan Epic
     let _ = epic::scan_epic_library(&conn);
+
+    // Scan GOG Galaxy
+    let _ = gog::scan_gog_library(&conn);
+
+    // Scan Ubisoft Connect
+    let _ = uplay::scan_uplay_library(&conn);
+
+    // Scan EA App
+    let _ = ea::scan_ea_library(&conn);
+
+    // Scan itch.io
+    let _ = itch::scan_itch_library(&conn);
 
     // Trigger background artwork fetch for Steam games
     crate::scanners::artwork::trigger_artwork_fetch_background();
@@ -39,6 +51,10 @@ pub async fn launch_game(game_id: String) -> Result<(), String> {
         "steam" => steam_launcher::launch(&game),
         "epic" => epic_launcher::launch(&game),
         "manual" => manual_launcher::launch(&game),
+        "gog" => gog_launcher::launch(&game),
+        "uplay" => uplay_launcher::launch(&game),
+        "ea" => ea_launcher::launch(&game),
+        "itch" => itch_launcher::launch(&game),
         _ => Err("Unknown library source".to_string()),
     };
 
@@ -260,6 +276,11 @@ pub async fn export_backup(dest_path: String) -> Result<(), String> {
 #[tauri::command]
 pub async fn import_backup(src_path: String) -> Result<(), String> {
     crate::utils::backup::import_backup(&src_path)
+}
+
+#[tauri::command]
+pub async fn sideload_manual_games_to_steam() -> Result<(), String> {
+    crate::utils::steam_shortcuts::sideload_manual_games_to_steam()
 }
 
 

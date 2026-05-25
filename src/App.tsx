@@ -391,14 +391,26 @@ function App() {
     if (isTauriEnv) {
       try {
         const { invoke } = await import("@tauri-apps/api/core");
-        // We'll write the command add_manual_game in the backend
         await invoke("add_manual_game", {
           title: gameData.title,
           exePath: gameData.exePath,
           args: gameData.args,
           artworkPath: gameData.artworkPath,
         });
+        
+        // Auto-sideload manual games directly to Steam if enabled
+        const autoSideloadVal = await invoke<string | null>("get_setting", { key: "steam_autosideload" });
+        if (autoSideloadVal === "true") {
+          try {
+            await invoke("sideload_manual_games_to_steam");
+            console.log("Auto-sideloaded manual game to Steam successfully!");
+          } catch (sideloadErr) {
+            console.error("Failed to auto-sideload manual game to Steam:", sideloadErr);
+          }
+        }
+
         loadGamesFromBackend();
+
       } catch (err) {
         console.error("Failed to persist manual game:", err);
       }

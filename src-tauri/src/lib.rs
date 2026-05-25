@@ -43,7 +43,8 @@ pub fn run() {
             commands::set_setting,
             commands::fetch_game_metadata,
             commands::export_backup,
-            commands::import_backup
+            commands::import_backup,
+            commands::sideload_manual_games_to_steam
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
