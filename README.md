@@ -216,12 +216,10 @@ Steam and Epic ownership, authentication, updates, and DRM remain handled by the
 - Steam detection currently relies on common install paths and local VDF files.
 - Epic detection currently relies on local manifest files.
 - Manual launch argument parsing is simple whitespace splitting.
-- The app still uses starter package/product metadata in a few places and should be renamed fully from the default Tauri template values before release.
 - There is no packaged release workflow documented yet.
 
 ## Roadmap Ideas
 
-- Rename package, Tauri product, bundle identifier, and Rust crate metadata from starter defaults.
 - Add tests for scanner parsing, database queries, and launcher command construction.
 - Improve Steam path detection through the Windows registry.
 - Add richer metadata and cover lookup.
