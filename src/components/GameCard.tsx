@@ -2,7 +2,7 @@ import React from "react";
 import { Game } from "../types/game";
 import { SourceBadge } from "./SourceBadge";
 import { StatusButton } from "./StatusButton";
-import { Heart, EyeOff, Clock } from "lucide-react";
+import { Heart, EyeOff, Clock, FolderOpen } from "lucide-react";
 import { getArtworkUrl } from "../utils/artwork";
 
 interface GameCardProps {
@@ -11,6 +11,7 @@ interface GameCardProps {
   onSelect: (game: Game) => void;
   onToggleFavorite: (gameId: string) => void;
   onToggleHide: (gameId: string) => void;
+  onOpenFolder: (gameId: string) => void;
 }
 
 // Generate beautiful deterministic gradients based on game title
@@ -38,6 +39,7 @@ export const GameCard: React.FC<GameCardProps> = ({
   onSelect,
   onToggleFavorite,
   onToggleHide,
+  onOpenFolder,
 }) => {
   const gradientClass = generateGradient(game.title);
 
@@ -56,6 +58,16 @@ export const GameCard: React.FC<GameCardProps> = ({
     >
       {/* Favorite badge & hide quick actions */}
       <div className="absolute top-2.5 right-2.5 z-10 flex space-x-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onOpenFolder(game.id);
+          }}
+          className="p-2 rounded-lg bg-slate-950/60 text-slate-400 hover:text-blue-400 hover:bg-slate-900/80 backdrop-blur-md transition-all duration-200"
+          title="Open Install Folder"
+        >
+          <FolderOpen className="w-3.5 h-3.5" />
+        </button>
         <button
           onClick={(e) => {
             e.stopPropagation();

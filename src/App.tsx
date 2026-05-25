@@ -405,6 +405,7 @@ function App() {
         await invoke("open_install_folder", { gameId });
       } catch (err) {
         console.error("Failed to open install folder:", err);
+        alert(typeof err === "string" ? err : "Failed to open install folder. Path might be missing or invalid.");
       }
     } else {
       alert(`Mock action: Open installation folder for game ID ${gameId}`);
@@ -471,6 +472,7 @@ function App() {
           onSelect={setSelectedGame}
           onToggleFavorite={handleToggleFavorite}
           onToggleHide={handleToggleHide}
+          onOpenFolder={handleOpenFolder}
           onOpenAddModal={() => setIsAddModalOpen(true)}
         />
       ) : (

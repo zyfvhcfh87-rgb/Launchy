@@ -13,6 +13,7 @@ interface LibraryPageProps {
   onSelect: (game: Game) => void;
   onToggleFavorite: (gameId: string) => void;
   onToggleHide: (gameId: string) => void;
+  onOpenFolder: (gameId: string) => void;
   onOpenAddModal: () => void;
 }
 
@@ -25,6 +26,7 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({
   onSelect,
   onToggleFavorite,
   onToggleHide,
+  onOpenFolder,
   onOpenAddModal,
 }) => {
   const [sortBy, setSortBy] = useState<string>("title-az");
@@ -181,6 +183,7 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({
           onSelect={onSelect}
           onToggleFavorite={onToggleFavorite}
           onToggleHide={onToggleHide}
+          onOpenFolder={onOpenFolder}
           onOpenAddModal={onOpenAddModal}
         />
       </main>

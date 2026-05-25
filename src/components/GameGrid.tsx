@@ -9,6 +9,7 @@ interface GameGridProps {
   onSelect: (game: Game) => void;
   onToggleFavorite: (gameId: string) => void;
   onToggleHide: (gameId: string) => void;
+  onOpenFolder: (gameId: string) => void;
   onOpenAddModal?: () => void;
 }
 
@@ -18,6 +19,7 @@ export const GameGrid: React.FC<GameGridProps> = ({
   onSelect,
   onToggleFavorite,
   onToggleHide,
+  onOpenFolder,
   onOpenAddModal,
 }) => {
   if (games.length === 0) {
@@ -53,6 +55,7 @@ export const GameGrid: React.FC<GameGridProps> = ({
           onSelect={onSelect}
           onToggleFavorite={onToggleFavorite}
           onToggleHide={onToggleHide}
+          onOpenFolder={onOpenFolder}
         />
       ))}
     </div>
