@@ -254,4 +254,6 @@ npm run tauri dev
 
 ## License
 
-No license file is currently present. Add one before publishing binaries or encouraging external contributions.
+Launchy is licensed under the GNU General Public License v3.0. See [LICENSE](LICENSE) for the full license text.
+
+Copyright (C) 2026 Aryel
