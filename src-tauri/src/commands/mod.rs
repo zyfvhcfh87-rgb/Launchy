@@ -1,0 +1,183 @@
+use crate::db::{queries, establish_connection};
+use crate::models::game::{Game, LibrarySource};
+use crate::scanners::{steam, epic, manual};
+use crate::launcher::{steam_launcher, epic_launcher, manual_launcher};
+
+#[tauri::command]
+pub async fn get_games() -> Result<Vec<Game>, String> {
+    let conn = establish_connection().map_err(|e| e.to_string())?;
+    queries::get_all_games(&conn).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn scan_libraries() -> Result<Vec<Game>, String> {
+    let conn = establish_connection().map_err(|e| e.to_string())?;
+    
+    // Scan Steam
+    let _ = steam::scan_steam_library(&conn);
+    
+    // Scan Epic
+    let _ = epic::scan_epic_library(&conn);
+
+    queries::get_all_games(&conn).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn launch_game(game_id: String) -> Result<(), String> {
+    let conn = establish_connection().map_err(|e| e.to_string())?;
+    let game = queries::get_game_by_id(&conn, &game_id)
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| "Game not found in library".to_string())?;
+
+    // Optimistically update status to launching
+    queries::update_status(&conn, &game_id, "launching").map_err(|e| e.to_string())?;
+
+    let launch_result = match game.source.as_str() {
+        "steam" => steam_launcher::launch(&game),
+        "epic" => epic_launcher::launch(&game),
+        "manual" => manual_launcher::launch(&game),
+        _ => Err("Unknown library source".to_string()),
+    };
+
+    if let Err(err) = launch_result {
+        // Roll back status to installed on failure
+        let _ = queries::update_status(&conn, &game_id, "error");
+        return Err(err);
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn toggle_favorite(game_id: String) -> Result<(), String> {
+    let conn = establish_connection().map_err(|e| e.to_string())?;
+    queries::toggle_favorite(&conn, &game_id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn set_hidden(game_id: String, hidden: bool) -> Result<(), String> {
+    let conn = establish_connection().map_err(|e| e.to_string())?;
+    queries::set_hidden(&conn, &game_id, hidden).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn add_manual_game(
+    title: String,
+    exePath: String,
+    args: Option<String>,
+    artworkPath: Option<String>,
+) -> Result<Game, String> {
+    let conn = establish_connection().map_err(|e| e.to_string())?;
+    manual::add_manual_game(&conn, title, exePath, args, artworkPath)
+}
+
+#[tauri::command]
+pub async fn open_install_folder(game_id: String) -> Result<(), String> {
+    let conn = establish_connection().map_err(|e| e.to_string())?;
+    let game = queries::get_game_by_id(&conn, &game_id)
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| "Game not found".to_string())?;
+
+    let install_path = game.install_path.ok_or_else(|| "No installation folder registered".to_string())?;
+    
+    open::that(&install_path)
+        .map_err(|e| format!("Failed to open install folder: {}", e))?;
+    
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn open_source_client(game_id: String) -> Result<(), String> {
+    let conn = establish_connection().map_err(|e| e.to_string())?;
+    let game = queries::get_game_by_id(&conn, &game_id)
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| "Game not found".to_string())?;
+
+    match game.source.as_str() {
+        "steam" => {
+            open::that("steam://")
+                .map_err(|e| format!("Failed to open Steam: {}", e))?;
+        }
+        "epic" => {
+            open::that("com.epicgames.launcher://")
+                .map_err(|e| format!("Failed to open Epic Games Launcher: {}", e))?;
+        }
+        _ => return Err("Standalone games do not have a platform client".to_string()),
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn get_library_sources() -> Result<Vec<LibrarySource>, String> {
+    let conn = establish_connection().map_err(|e| e.to_string())?;
+    queries::get_library_sources(&conn).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn add_library_source(source: String, path: String) -> Result<LibrarySource, String> {
+    let conn = establish_connection().map_err(|e| e.to_string())?;
+    
+    // Check if the directory path actually exists
+    let path_buf = std::path::PathBuf::from(&path);
+    if !path_buf.exists() {
+        return Err("The specified library folder path does not exist.".to_string());
+    }
+
+    let now = chrono::Local::now().to_rfc3339();
+    let source_id = format!("source_{}_{}", source, chrono::Local::now().timestamp_millis());
+
+    let library_source = LibrarySource {
+        id: source_id,
+        source: source.clone(),
+        detected_path: path,
+        enabled: true,
+        last_scan_at: None,
+        created_at: now.clone(),
+        updated_at: now,
+    };
+
+    queries::insert_library_source(&conn, &library_source).map_err(|e| e.to_string())?;
+    Ok(library_source)
+}
+
+#[tauri::command]
+pub async fn remove_library_source(id: String) -> Result<(), String> {
+    let conn = establish_connection().map_err(|e| e.to_string())?;
+    queries::remove_library_source(&conn, &id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn set_game_artwork(game_id: String, artwork_path: Option<String>) -> Result<(), String> {
+    let conn = establish_connection().map_err(|e| e.to_string())?;
+    queries::update_artwork_path(&conn, &game_id, artwork_path).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn select_file(title: String, filter_name: String, extensions: Vec<String>) -> Result<Option<String>, String> {
+    let mut dialog = rfd::FileDialog::new().set_title(&title);
+    
+    if !extensions.is_empty() {
+        let ext_refs: Vec<&str> = extensions.iter().map(|s| s.as_str()).collect();
+        dialog = dialog.add_filter(&filter_name, &ext_refs);
+    }
+
+    let selected = tauri::async_runtime::spawn_blocking(move || {
+        dialog.pick_file()
+    }).await.map_err(|e| e.to_string())?;
+
+    Ok(selected.map(|p| p.to_string_lossy().to_string()))
+}
+
+#[tauri::command]
+pub async fn select_directory(title: String) -> Result<Option<String>, String> {
+    let dialog = rfd::FileDialog::new().set_title(&title);
+
+    let selected = tauri::async_runtime::spawn_blocking(move || {
+        dialog.pick_folder()
+    }).await.map_err(|e| e.to_string())?;
+
+    Ok(selected.map(|p| p.to_string_lossy().to_string()))
+}
+
+
+
