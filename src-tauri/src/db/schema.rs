@@ -66,5 +66,21 @@ pub fn init_schema(conn: &Connection) -> Result<(), rusqlite::Error> {
         [],
     )?;
 
+    // Create key-value settings table
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS settings (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL
+        );",
+        [],
+    )?;
+
+    // Run migrations to append rich metadata fields to the games table if they don't exist
+    let _ = conn.execute("ALTER TABLE games ADD COLUMN description TEXT;", []);
+    let _ = conn.execute("ALTER TABLE games ADD COLUMN release_date TEXT;", []);
+    let _ = conn.execute("ALTER TABLE games ADD COLUMN genres TEXT;", []);
+    let _ = conn.execute("ALTER TABLE games ADD COLUMN developer TEXT;", []);
+    let _ = conn.execute("ALTER TABLE games ADD COLUMN esrb_rating TEXT;", []);
+
     Ok(())
 }

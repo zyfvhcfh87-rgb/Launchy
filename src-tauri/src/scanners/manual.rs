@@ -41,6 +41,11 @@ pub fn add_manual_game(
         created_at: now.clone(),
         updated_at: now,
         artwork: None,
+        description: None,
+        release_date: None,
+        genres: None,
+        developer: None,
+        esrb_rating: None,
     };
 
     queries::insert_or_update_game(conn, &game)

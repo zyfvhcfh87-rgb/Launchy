@@ -35,6 +35,11 @@ export interface Game {
   created_at: string;
   updated_at: string;
   artwork?: GameArtwork | null;
+  description?: string | null;
+  release_date?: string | null;
+  genres?: string | null;
+  developer?: string | null;
+  esrb_rating?: string | null;
 }
 
 export interface LibrarySource {

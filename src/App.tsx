@@ -166,6 +166,13 @@ function App() {
       const fetchedGames = await invoke<Game[]>("get_games");
       if (fetchedGames && fetchedGames.length > 0) {
         setGames(fetchedGames);
+        setSelectedGame((curr) => {
+          if (curr) {
+            const updated = fetchedGames.find((g) => g.id === curr.id);
+            return updated || curr;
+          }
+          return curr;
+        });
       }
     } catch (err) {
       console.warn("Failed to load games from Tauri backend. Using Mock Fallback.", err);
@@ -483,6 +490,7 @@ function App() {
           onOpenAddModal={() => setIsAddModalOpen(true)}
           onAddSource={handleAddLibrarySource}
           onRemoveSource={handleRemoveLibrarySource}
+          onRefreshLibrary={loadGamesFromBackend}
         />
       )}
 
@@ -496,6 +504,7 @@ function App() {
         onOpenFolder={handleOpenFolder}
         onOpenClient={handleOpenClient}
         onUpdateArtwork={handleUpdateArtwork}
+        onRefreshLibrary={loadGamesFromBackend}
       />
 
       <AddGameModal

@@ -1,5 +1,6 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Mutex};
+use std::sync::atomic::Ordering;
 use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter};
 use sysinfo::System;
@@ -11,16 +12,45 @@ struct StatusPayload {
     status: String,
 }
 
+// Trace active processes upwards using parent PIDs to check for ancestral root PID linkage
+fn is_descendant(
+    mut current_parent: Option<sysinfo::Pid>,
+    root_pids: &[sysinfo::Pid],
+    active_processes: &[(sysinfo::Pid, String, String, Option<sysinfo::Pid>)],
+) -> bool {
+    let mut visited = HashSet::new();
+    while let Some(parent) = current_parent {
+        if root_pids.contains(&parent) {
+            return true;
+        }
+        if !visited.insert(parent) {
+            break; // Stop infinite circular traversal loops
+        }
+        
+        // Find parent's parent from active processes list
+        let next_parent = active_processes.iter()
+            .find(|(pid, _, _, _)| *pid == parent)
+            .and_then(|(_, _, _, p_parent)| *p_parent);
+        current_parent = next_parent;
+    }
+    false
+}
+
 pub fn start_monitor(app_handle: AppHandle) {
     std::thread::spawn(move || {
         let mut sys = System::new_all();
         
-        // Track games we believe are currently running
-        // game_id -> (start_time, consecutive_missing_ticks)
-        let running_sessions: Arc<Mutex<HashMap<String, (Instant, u32)>>> = Arc::new(Mutex::new(HashMap::new()));
+        // Track games currently running
+        // game_id -> (start_time, consecutive_missing_ticks, tracked_root_pids)
+        let running_sessions: Arc<Mutex<HashMap<String, (Instant, u32, Vec<sysinfo::Pid>)>>> = Arc::new(Mutex::new(HashMap::new()));
         
         loop {
             std::thread::sleep(Duration::from_secs(3));
+
+            // Pause ticks safely if the import backup wizard is currently running
+            if crate::utils::backup::IS_RESTORING.load(Ordering::SeqCst) {
+                continue;
+            }
             
             let conn = match establish_connection() {
                 Ok(c) => c,
@@ -38,10 +68,11 @@ pub fn start_monitor(app_handle: AppHandle) {
             
             // Collect all active running process details
             let mut active_processes = Vec::new();
-            for (_pid, process) in sys.processes() {
+            for (pid, process) in sys.processes() {
                 let name = process.name().to_string();
                 let path = process.exe().map(|p| p.to_string_lossy().to_string()).unwrap_or_default();
-                active_processes.push((name, path));
+                let parent_pid = process.parent();
+                active_processes.push((*pid, name, path, parent_pid));
             }
 
             let mut sessions = running_sessions.lock().unwrap();
@@ -53,25 +84,47 @@ pub fn start_monitor(app_handle: AppHandle) {
                     _ => continue,
                 };
 
-                // Check if any process matches this game
-                let is_running = active_processes.iter().any(|(name, path)| {
-                    // Rule 1: The process executable is located inside the game's install path (strongest match)
+                // Check direct matching rules to discover newly spawned PIDs
+                let mut direct_matched_pids = Vec::new();
+                for (pid, name, path, _parent) in &active_processes {
                     let matches_path = !path.is_empty() && path.to_lowercase().starts_with(&install_path.to_lowercase());
-
-                    // Rule 2: If we have an expected launch executable, match by name
                     let matches_exe = if let Some(ref launch_exe) = game.launch_exe {
                         name.to_lowercase() == launch_exe.to_lowercase()
                     } else {
                         false
                     };
 
-                    matches_path || matches_exe
-                });
+                    if matches_path || matches_exe {
+                        direct_matched_pids.push(*pid);
+                    }
+                }
 
-                if is_running {
+                // Check if the game is active based on direct matches OR active descendants tree
+                let mut is_active = !direct_matched_pids.is_empty();
+
+                if let Some(session) = sessions.get_mut(&game.id) {
+                    // Update our root PIDs list with any new direct matches discovered
+                    for pid in &direct_matched_pids {
+                        if !session.2.contains(pid) {
+                            session.2.push(*pid);
+                        }
+                    }
+
+                    // If no direct matches are active, crawl process tree for existing tracked roots descendants
+                    if !is_active && !session.2.is_empty() {
+                        for (pid, _name, _path, parent) in &active_processes {
+                            if session.2.contains(pid) || is_descendant(*parent, &session.2, &active_processes) {
+                                is_active = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if is_active {
                     // If the game was not previously registered as running, transition it!
                     if !sessions.contains_key(&game.id) {
-                        sessions.insert(game.id.clone(), (Instant::now(), 0));
+                        sessions.insert(game.id.clone(), (Instant::now(), 0, direct_matched_pids));
                         
                         // Update DB to 'running'
                         let _ = queries::update_status(&conn, &game.id, "running");
@@ -85,18 +138,18 @@ pub fn start_monitor(app_handle: AppHandle) {
                             },
                         );
                     } else {
-                        // Reset the consecutive missing ticks if it's found running again
+                        // Reset consecutive missing ticks if still active
                         if let Some(session) = sessions.get_mut(&game.id) {
                             session.1 = 0;
                         }
                         
-                        // Safety: Make sure the state in DB is actually 'running'
+                        // Safety: Make sure the state in DB matches
                         if game.status != "running" {
                             let _ = queries::update_status(&conn, &game.id, "running");
                         }
                     }
                 } else {
-                    // Game is NOT running currently. Check if we were tracking it.
+                    // Game is NOT running. Check if we were tracking it.
                     if sessions.contains_key(&game.id) {
                         let should_terminate = {
                             let session = sessions.get_mut(&game.id).unwrap();
@@ -107,7 +160,7 @@ pub fn start_monitor(app_handle: AppHandle) {
                         };
 
                         if should_terminate {
-                            if let Some((start_time, _)) = sessions.remove(&game.id) {
+                            if let Some((start_time, _, _)) = sessions.remove(&game.id) {
                                 // Calculate playtime increment
                                 let elapsed = start_time.elapsed().as_secs() as i32;
                                 let now_str = chrono::Local::now().to_rfc3339();

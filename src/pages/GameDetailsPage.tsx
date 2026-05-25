@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Game } from "../types/game";
 import { SourceBadge } from "../components/SourceBadge";
 import { StatusButton } from "../components/StatusButton";
-import { X, Heart, EyeOff, FolderOpen, PlaySquare, Calendar, Clock, ChevronRight, Image as ImageIcon, Trash2, Check } from "lucide-react";
+import { X, Heart, EyeOff, FolderOpen, PlaySquare, Calendar, Clock, ChevronRight, Image as ImageIcon, Trash2, Check, RefreshCw } from "lucide-react";
 import { getArtworkUrl } from "../utils/artwork";
 
 interface GameDetailsPageProps {
@@ -14,6 +14,7 @@ interface GameDetailsPageProps {
   onOpenFolder: (gameId: string) => void;
   onOpenClient: (gameId: string) => void;
   onUpdateArtwork: (gameId: string, artworkPath: string | null) => void;
+  onRefreshLibrary?: () => void;
 }
 
 const generateGradient = (title: string) => {
@@ -43,11 +44,29 @@ export const GameDetailsPage: React.FC<GameDetailsPageProps> = ({
   onOpenFolder,
   onOpenClient,
   onUpdateArtwork,
+  onRefreshLibrary,
 }) => {
   if (!game) return null;
 
   const [artworkInput, setArtworkInput] = useState("");
   const [isSaved, setIsSaved] = useState(false);
+  const [isRefreshingMetadata, setIsRefreshingMetadata] = useState(false);
+
+  const handleRefreshMetadata = async () => {
+    try {
+      setIsRefreshingMetadata(true);
+      const { invoke } = await import("@tauri-apps/api/core");
+      const updated = await invoke<Game>("fetch_game_metadata", { gameId: game.id });
+      if (updated && onRefreshLibrary) {
+        onRefreshLibrary();
+      }
+    } catch (err) {
+      console.error("Failed to refresh game metadata:", err);
+      alert(`Metadata refresh failed: ${err}`);
+    } finally {
+      setIsRefreshingMetadata(false);
+    }
+  };
 
   useEffect(() => {
     if (game) {
@@ -189,7 +208,7 @@ export const GameDetailsPage: React.FC<GameDetailsPageProps> = ({
               <div className="flex space-x-2">
                 <button
                   onClick={() => onToggleFavorite(game.id)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1.5 border transition-all duration-200 ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1.5 border transition-all duration-200 cursor-pointer ${
                     game.favorite
                       ? "bg-rose-500/10 border-rose-500/30 text-rose-400"
                       : "bg-slate-900/60 border-slate-800 text-slate-400 hover:text-rose-400 hover:border-rose-500/20"
@@ -200,7 +219,7 @@ export const GameDetailsPage: React.FC<GameDetailsPageProps> = ({
                 </button>
                 <button
                   onClick={() => onToggleHide(game.id)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1.5 border transition-all duration-200 ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1.5 border transition-all duration-200 cursor-pointer ${
                     game.hidden
                       ? "bg-amber-500/10 border-amber-500/30 text-amber-400"
                       : "bg-slate-900/60 border-slate-800 text-slate-400 hover:text-white"
@@ -208,6 +227,15 @@ export const GameDetailsPage: React.FC<GameDetailsPageProps> = ({
                 >
                   <EyeOff className="w-3.5 h-3.5" />
                   <span>{game.hidden ? "HIDDEN" : "HIDE GAME"}</span>
+                </button>
+                <button
+                  onClick={handleRefreshMetadata}
+                  disabled={isRefreshingMetadata}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1.5 border border-slate-800 bg-slate-900/60 text-slate-400 hover:text-white transition-all duration-200 cursor-pointer disabled:opacity-50`}
+                  title="Scan IGDB & SteamGridDB for metadata updates"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isRefreshingMetadata ? "animate-spin" : ""}`} />
+                  <span>{isRefreshingMetadata ? "SYNCING..." : "SYNC INFO"}</span>
                 </button>
               </div>
             </div>
@@ -260,6 +288,49 @@ export const GameDetailsPage: React.FC<GameDetailsPageProps> = ({
               </div>
             </div>
           </div>
+
+          {/* Advanced Game Information Grid */}
+          {(game.developer || game.release_date || game.genres || game.esrb_rating) && (
+            <div className="bg-slate-900/20 border border-slate-800/40 rounded-xl p-5 shadow-inner space-y-4">
+              <h3 className="text-xs uppercase font-bold text-slate-200 tracking-wider">Game Information</h3>
+              <div className="grid grid-cols-2 gap-x-6 gap-y-4 text-xs">
+                {game.developer && (
+                  <div className="space-y-1">
+                    <span className="text-[10px] uppercase font-bold text-textMuted tracking-wider block">Developer</span>
+                    <span className="font-semibold text-slate-300">{game.developer}</span>
+                  </div>
+                )}
+                {game.release_date && (
+                  <div className="space-y-1">
+                    <span className="text-[10px] uppercase font-bold text-textMuted tracking-wider block">Release Date</span>
+                    <span className="font-semibold text-slate-300">{formatDate(game.release_date)}</span>
+                  </div>
+                )}
+                {game.genres && (
+                  <div className="space-y-1 col-span-2">
+                    <span className="text-[10px] uppercase font-bold text-textMuted tracking-wider block">Genres</span>
+                    <span className="font-semibold text-slate-300">{game.genres}</span>
+                  </div>
+                )}
+                {game.esrb_rating && (
+                  <div className="space-y-1">
+                    <span className="text-[10px] uppercase font-bold text-textMuted tracking-wider block">Age Rating</span>
+                    <span className="font-semibold text-slate-300">{game.esrb_rating}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Game Description Overview */}
+          {game.description && (
+            <div className="bg-slate-900/20 border border-slate-800/40 rounded-xl p-5 shadow-inner space-y-2.5">
+              <h3 className="text-xs uppercase font-bold text-slate-200 tracking-wider">Overview</h3>
+              <p className="text-xs text-textMuted leading-relaxed max-h-48 overflow-y-auto select-text pr-2 bg-transparent scrollbar-thin">
+                {game.description}
+              </p>
+            </div>
+          )}
 
           {/* Details Section */}
           <div className="space-y-4">

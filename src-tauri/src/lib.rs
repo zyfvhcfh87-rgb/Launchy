@@ -4,8 +4,7 @@ pub mod scanners;
 pub mod launcher;
 pub mod process_monitor;
 pub mod commands;
-
-use tauri::Manager;
+pub mod utils;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -39,7 +38,12 @@ pub fn run() {
             commands::remove_library_source,
             commands::set_game_artwork,
             commands::select_file,
-            commands::select_directory
+            commands::select_directory,
+            commands::get_setting,
+            commands::set_setting,
+            commands::fetch_game_metadata,
+            commands::export_backup,
+            commands::import_backup
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

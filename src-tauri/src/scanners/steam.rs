@@ -260,6 +260,11 @@ fn parse_acf_file(path: &Path, library_root: &Path) -> Result<Game, String> {
         created_at: now.clone(),
         updated_at: now,
         artwork: None,
+        description: None,
+        release_date: None,
+        genres: None,
+        developer: None,
+        esrb_rating: None,
     })
 }
 

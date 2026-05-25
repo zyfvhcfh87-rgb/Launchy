@@ -20,6 +20,11 @@ pub struct Game {
     pub created_at: String,
     pub updated_at: String,
     pub artwork: Option<GameArtwork>,
+    pub description: Option<String>,
+    pub release_date: Option<String>,
+    pub genres: Option<String>,
+    pub developer: Option<String>,
+    pub esrb_rating: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

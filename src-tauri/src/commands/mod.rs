@@ -235,5 +235,32 @@ pub async fn select_directory(title: String) -> Result<Option<String>, String> {
     Ok(selected.map(|p| p.to_string_lossy().to_string()))
 }
 
+#[tauri::command]
+pub async fn get_setting(key: String) -> Result<Option<String>, String> {
+    let conn = establish_connection().map_err(|e| e.to_string())?;
+    queries::get_setting(&conn, &key).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn set_setting(key: String, value: String) -> Result<(), String> {
+    let conn = establish_connection().map_err(|e| e.to_string())?;
+    queries::set_setting(&conn, &key, &value).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn fetch_game_metadata(game_id: String) -> Result<Game, String> {
+    crate::scanners::metadata::fetch_and_save_metadata(&game_id)
+}
+
+#[tauri::command]
+pub async fn export_backup(dest_path: String) -> Result<(), String> {
+    crate::utils::backup::export_backup(&dest_path)
+}
+
+#[tauri::command]
+pub async fn import_backup(src_path: String) -> Result<(), String> {
+    crate::utils::backup::import_backup(&src_path)
+}
+
 
 

@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { LibrarySource } from "../types/game";
-import { RefreshCw, FolderSearch, ShieldCheck, Gamepad2, HelpCircle, HardDrive, Trash2, Plus, FolderPlus } from "lucide-react";
+import { RefreshCw, FolderSearch, ShieldCheck, Gamepad2, HelpCircle, HardDrive, Trash2, Plus, FolderPlus, Key, Save, Download, Upload, Database } from "lucide-react";
 
 interface SettingsPageProps {
   sources: LibrarySource[];
@@ -9,6 +9,7 @@ interface SettingsPageProps {
   onOpenAddModal: () => void;
   onAddSource: (source: "steam" | "epic", path: string) => void;
   onRemoveSource: (id: string) => void;
+  onRefreshLibrary?: () => void;
 }
 
 export const SettingsPage: React.FC<SettingsPageProps> = ({
@@ -18,10 +19,103 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
   onOpenAddModal,
   onAddSource,
   onRemoveSource,
+  onRefreshLibrary,
 }) => {
   const [newSourceType, setNewSourceType] = useState<"steam" | "epic">("steam");
   const [newSourcePath, setNewSourcePath] = useState("");
   const [formError, setFormError] = useState("");
+
+  // API Credentials State
+  const [steamGridKey, setSteamGridKey] = useState("");
+  const [igdbClientId, setIgdbClientId] = useState("");
+  const [igdbClientSecret, setIgdbClientSecret] = useState("");
+  const [saveMessage, setSaveMessage] = useState("");
+  const [isBackupExporting, setIsBackupExporting] = useState(false);
+  const [isBackupImporting, setIsBackupImporting] = useState(false);
+
+  // Load API Keys on Mount
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const { invoke } = await import("@tauri-apps/api/core");
+        const sgKey = await invoke<string | null>("get_setting", { key: "steamgrid_api_key" });
+        const twitchId = await invoke<string | null>("get_setting", { key: "igdb_client_id" });
+        const twitchSecret = await invoke<string | null>("get_setting", { key: "igdb_client_secret" });
+
+        if (sgKey) setSteamGridKey(sgKey);
+        if (twitchId) setIgdbClientId(twitchId);
+        if (twitchSecret) setIgdbClientSecret(twitchSecret);
+      } catch (err) {
+        console.error("Failed to load settings:", err);
+      }
+    };
+    loadSettings();
+  }, []);
+
+  const handleSaveSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const { invoke } = await import("@tauri-apps/api/core");
+      await invoke("set_setting", { key: "steamgrid_api_key", value: steamGridKey });
+      await invoke("set_setting", { key: "igdb_client_id", value: igdbClientId });
+      await invoke("set_setting", { key: "igdb_client_secret", value: igdbClientSecret });
+      setSaveMessage("Settings saved successfully!");
+      setTimeout(() => setSaveMessage(""), 3000);
+    } catch (err) {
+      console.error("Failed to save settings:", err);
+      setSaveMessage("Error saving settings.");
+    }
+  };
+
+  const handleExportBackup = async () => {
+    try {
+      const { invoke } = await import("@tauri-apps/api/core");
+      const selectedPath = await invoke<string | null>("select_file", {
+        title: "Save Launchy Backup",
+        filterName: "ZIP Archive",
+        extensions: ["zip"]
+      });
+      if (selectedPath) {
+        setIsBackupExporting(true);
+        await invoke("export_backup", { destPath: selectedPath });
+        alert(`Backup exported successfully to:\n${selectedPath}`);
+      }
+    } catch (err) {
+      console.error("Failed to export backup:", err);
+      alert(`Export failed: ${err}`);
+    } finally {
+      setIsBackupExporting(false);
+    }
+  };
+
+  const handleImportBackup = async () => {
+    try {
+      const { invoke } = await import("@tauri-apps/api/core");
+      const selectedPath = await invoke<string | null>("select_file", {
+        title: "Select Launchy Backup to Restore",
+        filterName: "ZIP Archive",
+        extensions: ["zip"]
+      });
+      if (selectedPath) {
+        const confirmRestore = window.confirm(
+          "WARNING: Restoring a backup will overwrite your current library database and artwork cache folder.\n\nAre you sure you want to proceed?"
+        );
+        if (confirmRestore) {
+          setIsBackupImporting(true);
+          await invoke("import_backup", { srcPath: selectedPath });
+          alert("Backup successfully restored! Launchy will now refresh your library.");
+          if (onRefreshLibrary) {
+            onRefreshLibrary();
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Failed to import backup:", err);
+      alert(`Import failed: ${err}`);
+    } finally {
+      setIsBackupImporting(false);
+    }
+  };
 
   const handleBrowseFolder = async () => {
     try {
@@ -264,6 +358,68 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
             </div>
           </div>
 
+          {/* Third-Party API Integrations */}
+          <div className="bg-bgCard border border-slate-800/80 rounded-2xl overflow-hidden shadow-xl">
+            <div className="p-5 border-b border-slate-800/60 bg-slate-950/40 flex justify-between items-center">
+              <div className="flex items-center space-x-3">
+                <Key className="w-5 h-5 text-amber-400" />
+                <h3 className="text-sm font-bold text-slate-200">Third-Party API Integrations</h3>
+              </div>
+              <span className="text-[10px] font-bold text-textMuted bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
+                METADATA
+              </span>
+            </div>
+
+            <form onSubmit={handleSaveSettings} className="p-5 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5 col-span-1 md:col-span-2">
+                  <label className="text-[10px] uppercase font-bold text-textMuted/80 tracking-wider">SteamGridDB API Key</label>
+                  <input
+                    type="password"
+                    value={steamGridKey}
+                    onChange={(e) => setSteamGridKey(e.target.value)}
+                    placeholder="Enter your SteamGridDB API key"
+                    className="w-full bg-slate-950/50 border border-slate-800/80 rounded-xl px-4 py-2.5 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-amber-500/50 transition-all font-mono"
+                  />
+                  <p className="text-[10px] text-textMuted">Used to auto-fetch high-resolution cover arts, logos, icons, and hero banners.</p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] uppercase font-bold text-textMuted/80 tracking-wider">Twitch Client ID (IGDB)</label>
+                  <input
+                    type="text"
+                    value={igdbClientId}
+                    onChange={(e) => setIgdbClientId(e.target.value)}
+                    placeholder="Twitch Developer Client ID"
+                    className="w-full bg-slate-950/50 border border-slate-800/80 rounded-xl px-4 py-2.5 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-amber-500/50 transition-all font-mono"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] uppercase font-bold text-textMuted/80 tracking-wider">Twitch Client Secret (IGDB)</label>
+                  <input
+                    type="password"
+                    value={igdbClientSecret}
+                    onChange={(e) => setIgdbClientSecret(e.target.value)}
+                    placeholder="Twitch Developer Client Secret"
+                    className="w-full bg-slate-950/50 border border-slate-800/80 rounded-xl px-4 py-2.5 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-amber-500/50 transition-all font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between border-t border-slate-800/30 pt-4 mt-2">
+                <span className="text-xs font-semibold text-emerald-400 min-h-5 select-none">{saveMessage}</span>
+                <button
+                  type="submit"
+                  className="bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs tracking-wider px-4 py-2 rounded-xl border border-amber-500/20 shadow-lg shadow-amber-900/10 transition-all duration-300 transform active:scale-95 flex items-center space-x-1.5 cursor-pointer"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  <span>SAVE CREDENTIALS</span>
+                </button>
+              </div>
+            </form>
+          </div>
+
           {/* Privacy Standards Box */}
           <div className="bg-bgCard border border-slate-800/80 rounded-2xl p-5 shadow-xl space-y-4">
             <div className="flex items-center space-x-3 text-slate-200">
@@ -315,6 +471,37 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                 <span className="text-[10px] text-textMuted font-bold uppercase tracking-wider block">App Host Shell</span>
                 <p className="text-xs text-slate-300 font-semibold mt-1">Rust Backend | React + Vite UI</p>
               </div>
+            </div>
+          </div>
+
+          {/* Library Backup & Migration */}
+          <div className="bg-bgCard border border-slate-800/80 rounded-2xl p-5 shadow-xl space-y-4">
+            <h3 className="text-sm font-bold text-slate-200 flex items-center space-x-2">
+              <Database className="w-4.5 h-4.5 text-emerald-400" />
+              <span>Backup & Portability</span>
+            </h3>
+            <p className="text-xs text-textMuted leading-relaxed">
+              Export your entire Launchy configuration, manual games, play sessions, and cover artwork cache into a single zip file to migrate to another PC or save a backup.
+            </p>
+
+            <div className="flex flex-col space-y-2 pt-2">
+              <button
+                onClick={handleExportBackup}
+                disabled={isBackupExporting}
+                className="w-full bg-slate-900/60 hover:bg-slate-800 border border-slate-800 text-slate-200 hover:text-white px-4 py-2.5 rounded-xl font-bold text-xs tracking-wider transition-all duration-300 transform active:scale-95 flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-50"
+              >
+                <Download className={`w-4 h-4 ${isBackupExporting ? "animate-bounce" : ""}`} />
+                <span>{isBackupExporting ? "EXPORTING BACKUP..." : "EXPORT LIBRARY BACKUP"}</span>
+              </button>
+
+              <button
+                onClick={handleImportBackup}
+                disabled={isBackupImporting}
+                className="w-full bg-slate-900/60 hover:bg-slate-800 border border-slate-800 text-slate-200 hover:text-white px-4 py-2.5 rounded-xl font-bold text-xs tracking-wider transition-all duration-300 transform active:scale-95 flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-50"
+              >
+                <Upload className={`w-4 h-4 ${isBackupImporting ? "animate-pulse" : ""}`} />
+                <span>{isBackupImporting ? "IMPORTING BACKUP..." : "IMPORT LIBRARY BACKUP"}</span>
+              </button>
             </div>
           </div>
 
