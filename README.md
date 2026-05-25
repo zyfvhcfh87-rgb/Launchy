@@ -6,22 +6,21 @@ The app is currently an early alpha. The core desktop shell, library UI, local S
 
 ## Highlights
 
-- Unified game library for Steam, Epic Games, and custom executable entries.
-- Local library scanning for Steam `appmanifest_*.acf` files and Epic `.item` manifests.
-- Manual game registration for standalone games, emulators, tools, and non-Steam/non-Epic installs.
-- One-click launching through Steam/Epic protocol URIs or direct executable spawning.
-- Live status updates for installed, launching, running, missing, and error states.
-- Playtime and last-played tracking through a lightweight background process monitor.
-- Favorites, hidden games, source filters, and search.
-- Game details drawer with install path, source metadata, launch actions, and artwork controls.
-- Custom cover artwork from local files, web URLs, or data URLs.
-- Local SQLite database. No account, cloud sync, telemetry, or launcher login is required by Launchy itself.
+- **Unified Game Library**: Aggregates Steam, Epic Games, and custom standalone executable entries in a unified responsive dashboard.
+- **Robust Auto-Discovery Scanners**: Crawls Steam `appmanifest_*.acf` files (leveraging Windows Registry-first discovery) and parses Epic `.item` manifests.
+- **Asynchronous Artwork CDN Fetcher**: Auto-downloads vertical covers (`library_600x900.jpg`) and horizontal hero banners (`library_hero.jpg`) in a background worker thread. Utilizes sequential fallback sequences across Cloudflare and Akamai CDNs.
+- **Manual Cover Overrides**: Allows selecting persistent cover art using native OS file selectors and copying selected images directly into the local `artwork` cache directory.
+- **Rich Library Sorting & Ordering**: Features a modern Lucide-icon select dropdown offering dynamic sorting: Title (A-Z/Z-A), Favorites First, Recently Played, Most Played, Source/Platform, and Recently Added.
+- **Playtime & Session Tracker**: Employs an extremely lightweight background process monitor that tracks system executables and folders every 3 seconds to log last-played dates and compute accumulated playtime.
+- **Interactive Details Drawer**: Displays full source metadata, installation directories, responsive cover card visuals, wide horizontal hero graphics (`h-44`), and custom command line argument configurations.
+- **Open Installation Directory Action**: Lets users open game folders in the native OS File Explorer directly from game cards or the details drawer.
+- **Local SQLite Persistence**: Persists all settings, library folders, process signatures, and playtime tracking locally in a unified SQLite database (`launchy.db`). No telemetry, accounts, or launchers are injected.
 
 ## Screens and Flows
 
 Launchy is organized around two main areas:
 
-- **Library**: browse all discovered games, filter by source, search by title, favorite or hide entries, open details, and launch games.
+- **Library**: browse all discovered games, filter by source, search by title, sort with polished dropdown parameters, favorite or hide entries, open details, and launch games.
 - **Settings**: scan libraries, add custom Steam/Epic scan folders, register standalone games, and review local scanner diagnostics.
 
 When running outside the Tauri desktop shell, the React UI falls back to mock data so the interface can still be developed in a browser with Vite.
@@ -34,7 +33,7 @@ When running outside the Tauri desktop shell, the React UI falls back to mock da
 - **Icons**: lucide-react
 - **Backend**: Rust
 - **Storage**: SQLite through `rusqlite`
-- **Native helpers**: `open`, `rfd`, `sysinfo`, `dirs`, `walkdir`, `regex`, `chrono`, `winreg`
+- **Native helpers**: `reqwest`, `open`, `rfd`, `sysinfo`, `dirs`, `walkdir`, `regex`, `chrono`, `winreg`
 
 ## Repository Structure
 
@@ -225,11 +224,11 @@ Steam and Epic ownership, authentication, updates, and DRM remain handled by the
 
 ## Roadmap Ideas
 
-- Add tests for scanner parsing, database queries, and launcher command construction.
-- Add richer metadata and cover lookup.
-- Support import/export or backup of the local library database.
-- Add release packaging instructions and published installers.
-- Expand cross-platform scanner support for macOS and Linux.
+- **Advanced Metadata Integrations**: Support online scraping from APIs like SteamGridDB or IGDB for Epic Games and manual standalone titles.
+- **Library Database Backup**: Create import/export utilities for backing up or migrating user SQLite `launchy.db` entries.
+- **Cross-Platform Scanners**: Expand directory/registry-equivalent scanning modules for macOS and Linux operating systems.
+- **CI/CD Build Automation**: Configure GitHub Actions to automatically build, package, and release signed installers (`.msi`, `.dmg`, `.deb`).
+- **Additional Launcher Support**: Support scanning for GOG Galaxy, Ubisoft Connect, EA App, and itch.io games.
 
 ## Contributing
 
