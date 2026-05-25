@@ -6,12 +6,16 @@ The app is currently an early alpha. The core desktop shell, library UI, local S
 
 ## Highlights
 
-- **Unified Game Library**: Aggregates Steam, Epic Games, and custom standalone executable entries in a unified responsive dashboard.
-- **Robust Auto-Discovery Scanners**: Crawls Steam `appmanifest_*.acf` files (leveraging Windows Registry-first discovery) and parses Epic `.item` manifests.
+- **Unified Game Library**: Aggregates Steam, Epic Games, GOG Galaxy, Ubisoft Connect, EA App, itch.io, and custom standalone executable entries in a unified responsive dashboard.
+- **Robust Auto-Discovery Scanners**: Crawls Steam `appmanifest_*.acf` files (leveraging Windows Registry-first discovery), GOG registry keys, EA catalog offers, Uplay configurations, itch app dbs, and parses Epic `.item` manifests.
+- **Widescreen Console TV Mode**: Features a fully immersive television dashboard layout navigable natively using standard Xbox and PlayStation controllers via the HTML5 Gamepad API (or keyboards), complete with smooth horizontal carousels, highlighted spotlight banners, and native HTML5 Fullscreen synchronizations.
+- **Playtime Stats Dashboard**: Visually displays gaming habits with total cumulative stats, a responsive pure-CSS SVG bar chart of daily activity over the past 7 days, favorite genre splits, and scrollable play histories.
+- **Custom Tag Categories Manager**: Allows players to group and organize games into custom collections (e.g. "Backlog", "Completed", "Multiplayer") and map tags dynamically.
+- **Extensible sandboxed Plugin Ecosystem**: Exposes a JavaScript/Python API inside `%APPDATA%/Launchy/plugins/` to list, toggle, and execute custom background metadata scrapers, local logs parsers, or library connectors.
 - **Asynchronous Artwork CDN Fetcher**: Auto-downloads vertical covers (`library_600x900.jpg`) and horizontal hero banners (`library_hero.jpg`) in a background worker thread. Utilizes sequential fallback sequences across Cloudflare and Akamai CDNs.
 - **Manual Cover Overrides**: Allows selecting persistent cover art using native OS file selectors and copying selected images directly into the local `artwork` cache directory.
 - **Rich Library Sorting & Ordering**: Features a modern Lucide-icon select dropdown offering dynamic sorting: Title (A-Z/Z-A), Favorites First, Recently Played, Most Played, Source/Platform, and Recently Added.
-- **Playtime & Session Tracker**: Employs an extremely lightweight background process monitor that tracks system executables and folders every 3 seconds to log last-played dates and compute accumulated playtime.
+- **Playtime & Session Tracker**: Employs an extremely lightweight background process monitor that tracks system executables and folders recursively using parent PIDs to log precise last-played dates, compute session durations, and accumulate playtime.
 - **Interactive Details Drawer**: Displays full source metadata, installation directories, responsive cover card visuals, wide horizontal hero graphics (`h-44`), and custom command line argument configurations.
 - **Open Installation Directory Action**: Lets users open game folders in the native OS File Explorer directly from game cards or the details drawer.
 - **Local SQLite Persistence**: Persists all settings, library folders, process signatures, and playtime tracking locally in a unified SQLite database (`launchy.db`). No telemetry, accounts, or launchers are injected.
@@ -33,7 +37,8 @@ When running outside the Tauri desktop shell, the React UI falls back to mock da
 - **Icons**: lucide-react
 - **Backend**: Rust
 - **Storage**: SQLite through `rusqlite`
-- **Native helpers**: `reqwest`, `open`, `rfd`, `sysinfo`, `dirs`, `walkdir`, `regex`, `chrono`, `winreg`
+- **Native helpers**: `reqwest`, `open`, `rfd`, `sysinfo`, `dirs`, `walkdir`, `regex`, `chrono`, `winreg`, `zip`
+- **Widescreen APIs**: HTML5 Gamepad API, HTML5 Fullscreen API
 
 ## Repository Structure
 
@@ -217,18 +222,29 @@ Steam and Epic ownership, authentication, updates, and DRM remain handled by the
 
 ## Current Limitations
 
-- Windows is the best-supported platform right now.
-- Epic detection currently relies on local manifest files.
-- Manual launch argument parsing is simple whitespace splitting.
-- There is no packaged release workflow documented yet.
+- Subprocess script executions require Python/Node.js to be installed on the host system to run custom plugins.
+- Widescreen Gamepad navigation relies on browser controller support (Xbox or PlayStation layouts).
 
-## Roadmap Ideas
+## Completed Roadmap Features (Done!)
 
-- **Advanced Metadata Integrations**: Support online scraping from APIs like SteamGridDB or IGDB for Epic Games and manual standalone titles.
-- **Library Database Backup**: Create import/export utilities for backing up or migrating user SQLite `launchy.db` entries.
-- **Cross-Platform Scanners**: Expand directory/registry-equivalent scanning modules for macOS and Linux operating systems.
-- **CI/CD Build Automation**: Configure GitHub Actions to automatically build, package, and release signed installers (`.msi`, `.dmg`, `.deb`).
-- **Additional Launcher Support**: Support scanning for GOG Galaxy, Ubisoft Connect, EA App, and itch.io games.
+- **Advanced Metadata Integrations**: Pull online summaries and release dates via IGDB and download high-resolution cover grids, logos, and heroes from SteamGridDB.
+- **Library Database Backup & Migration**: Compress SQLite database and cover art folders recursively into a transactional `launchy-backup.zip` file with integrity validations.
+- **Cross-Platform Scanners**: Native library scanners resolving paths on Windows, macOS, and Linux operating systems with conditional compilation guards.
+- **Additional Platforms Support**: Automatic library crawling for Steam, Epic Games, GOG Galaxy, Ubisoft Connect, EA App, and itch.io.
+- **CI/CD Package Build Pipeline**: GitHub Actions workflows compiling and packaging `.msi`, portable `.zip`, macOS `.dmg`, Linux `.deb`, and `.AppImage` bundles on tag pushes.
+- **Tauri-Compliant Plugin Loader**: Sandboxed custom JavaScript and Python plugin loader using stdio subprocesses.
+- **Fullscreen TV Console UI**: Widescreen layout navigable natively via Xbox/PlayStation controllers with sliding auto-centered scroll carousels.
+- **Habits Stats Analytics**: Pure-CSS SVG playtime charts, genre progress splits, recent sessions logs, and custom tag category collections.
+
+## Future Roadmap
+
+Looking ahead, we plan to continue expanding Launchy's features to make it the ultimate open-source game library:
+
+- **Retro Console & Emulator Integration**: Auto-scan ROM directories and integrate launchers for RetroArch, PCSX2, Dolphin, and other popular emulators.
+- **Local Recommendations Engine**: A completely privacy-respecting local recommendation system suggesting games from your backlog based on playtime, genres, and play habits.
+- **Custom Game Art Scraping Rules**: Define regex patterns or directory matching rules for local artwork directories to auto-resolve artwork files.
+- **Rich Presence Integration**: Support Discord Rich Presence to show what game (including manual entries) you are currently playing.
+- **Personal Cloud Sync**: Voluntary, encrypted backup/restore sync using personal cloud drives (Google Drive, OneDrive, Nextcloud).
 
 ## Contributing
 
