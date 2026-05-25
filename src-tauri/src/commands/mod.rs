@@ -85,10 +85,14 @@ pub async fn add_manual_game(
     exePath: String,
     args: Option<String>,
     artworkPath: Option<String>,
+    runnerType: Option<String>,
+    runnerPath: Option<String>,
+    runnerPrefix: Option<String>,
 ) -> Result<Game, String> {
     let conn = establish_connection().map_err(|e| e.to_string())?;
-    manual::add_manual_game(&conn, title, exePath, args, artworkPath)
+    manual::add_manual_game(&conn, title, exePath, args, artworkPath, runnerType, runnerPath, runnerPrefix)
 }
+
 
 #[tauri::command]
 pub async fn open_install_folder(game_id: String) -> Result<(), String> {

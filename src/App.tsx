@@ -365,16 +365,24 @@ function App() {
     exePath: string;
     args: string;
     artworkPath: string;
+    runnerType?: string;
+    runnerPath?: string;
+    runnerPrefix?: string;
   }) => {
+    const separator = gameData.exePath.includes("/") ? "/" : "\\";
+    const lastSepIndex = gameData.exePath.lastIndexOf(separator);
+    const installPath = lastSepIndex !== -1 ? gameData.exePath.substring(0, lastSepIndex) : "";
+    const launchExe = lastSepIndex !== -1 ? gameData.exePath.substring(lastSepIndex + 1) : gameData.exePath;
+
     const newGame: Game = {
       id: `manual_${Date.now()}`,
       source: "manual",
       source_app_id: null,
       title: gameData.title,
-      install_path: gameData.exePath.substring(0, gameData.exePath.lastIndexOf("\\")),
+      install_path: installPath || null,
       launch_method: "exec",
       launch_uri: null,
-      launch_exe: gameData.exePath.substring(gameData.exePath.lastIndexOf("\\") + 1),
+      launch_exe: launchExe,
       launch_args: gameData.args || null,
       artwork_path: gameData.artworkPath || null,
       status: "installed",
@@ -384,6 +392,9 @@ function App() {
       playtime_seconds: 0,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
+      runner_type: gameData.runnerType || "native",
+      runner_path: gameData.runnerPath || null,
+      runner_prefix: gameData.runnerPrefix || null,
     };
 
     setGames((prev) => [newGame, ...prev]);
@@ -396,6 +407,9 @@ function App() {
           exePath: gameData.exePath,
           args: gameData.args,
           artworkPath: gameData.artworkPath,
+          runnerType: gameData.runnerType || "native",
+          runnerPath: gameData.runnerPath || null,
+          runnerPrefix: gameData.runnerPrefix || null,
         });
         
         // Auto-sideload manual games directly to Steam if enabled

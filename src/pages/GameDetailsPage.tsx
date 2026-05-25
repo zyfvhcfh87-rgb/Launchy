@@ -380,6 +380,41 @@ export const GameDetailsPage: React.FC<GameDetailsPageProps> = ({
                   </span>
                 </div>
               )}
+
+              {game.runner_type && game.runner_type !== "native" && (
+                <>
+                  <div className="p-4 flex flex-col space-y-1 bg-slate-900/40">
+                    <span className="text-[10px] uppercase font-bold text-amber-500 tracking-wider">
+                      Compatibility Runner
+                    </span>
+                    <span className="text-sm text-slate-300 font-semibold uppercase tracking-wide">
+                      {game.runner_type}
+                    </span>
+                  </div>
+
+                  {game.runner_path && (
+                    <div className="p-4 flex flex-col space-y-1">
+                      <span className="text-[10px] uppercase font-bold text-textMuted tracking-wider">
+                        Runner Binary Path
+                      </span>
+                      <span className="text-xs text-slate-400 font-mono select-text break-all">
+                        {game.runner_path}
+                      </span>
+                    </div>
+                  )}
+
+                  {game.runner_prefix && (
+                    <div className="p-4 flex flex-col space-y-1">
+                      <span className="text-[10px] uppercase font-bold text-textMuted tracking-wider">
+                        Wine Prefix Directory
+                      </span>
+                      <span className="text-xs text-slate-400 font-mono select-text break-all">
+                        {game.runner_prefix}
+                      </span>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           </div>
 

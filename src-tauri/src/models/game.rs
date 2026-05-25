@@ -25,6 +25,10 @@ pub struct Game {
     pub genres: Option<String>,
     pub developer: Option<String>,
     pub esrb_rating: Option<String>,
+    pub runner_type: Option<String>,
+    pub runner_path: Option<String>,
+    pub runner_prefix: Option<String>,
+
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

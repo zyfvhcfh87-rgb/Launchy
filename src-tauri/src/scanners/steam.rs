@@ -72,10 +72,33 @@ fn detect_steam_root_from_registry() -> Option<PathBuf> {
 
 // Detection from common hardcoded paths
 fn detect_steam_root_from_common_paths() -> Option<PathBuf> {
-    let paths = [
+    #[cfg(target_os = "windows")]
+    let paths = vec![
         PathBuf::from("C:\\Program Files (x86)\\Steam"),
         PathBuf::from("C:\\Program Files\\Steam"),
     ];
+
+    #[cfg(target_os = "linux")]
+    let mut paths = Vec::new();
+    #[cfg(target_os = "linux")]
+    {
+        if let Some(home) = dirs::home_dir() {
+            paths.push(home.join(".steam").join("steam"));
+            paths.push(home.join(".steam").join("root"));
+            paths.push(home.join(".local").join("share").join("Steam"));
+            paths.push(home.join(".var").join("app").join("com.valvesoftware.Steam").join(".steam").join("steam"));
+            paths.push(home.join(".var").join("app").join("com.valvesoftware.Steam").join("data").join("Steam"));
+        }
+    }
+
+    #[cfg(target_os = "macos")]
+    let mut paths = Vec::new();
+    #[cfg(target_os = "macos")]
+    {
+        if let Some(home) = dirs::home_dir() {
+            paths.push(home.join("Library").join("Application Support").join("Steam"));
+        }
+    }
 
     // Try finding one with a valid libraryfolders.vdf first
     for path in &paths {
@@ -93,6 +116,7 @@ fn detect_steam_root_from_common_paths() -> Option<PathBuf> {
 
     None
 }
+
 
 // Primary public function for Steam path detection
 pub fn detect_steam_root() -> Option<PathBuf> {
@@ -265,6 +289,9 @@ fn parse_acf_file(path: &Path, library_root: &Path) -> Result<Game, String> {
         genres: None,
         developer: None,
         esrb_rating: None,
+        runner_type: None,
+        runner_path: None,
+        runner_prefix: None,
     })
 }
 

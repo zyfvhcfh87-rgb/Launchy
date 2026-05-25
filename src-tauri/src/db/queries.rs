@@ -5,22 +5,23 @@ pub fn get_all_games(conn: &Connection) -> Result<Vec<Game>> {
     let mut stmt = conn.prepare("
         SELECT g.id, g.source, g.source_app_id, g.title, g.install_path, g.launch_method, g.launch_uri, g.launch_exe, g.launch_args, g.artwork_path, g.status, g.favorite, g.hidden, g.last_played_at, g.playtime_seconds, g.created_at, g.updated_at,
                g.description, g.release_date, g.genres, g.developer, g.esrb_rating,
+               g.runner_type, g.runner_path, g.runner_prefix,
                a.cover_path, a.hero_path, a.logo_path, a.icon_path, a.source, a.updated_at
         FROM games g
         LEFT JOIN game_artwork a ON g.id = a.game_id
         ORDER BY g.title ASC
     ")?;
     let game_iter = stmt.query_map([], |row| {
-        let art_source: Option<String> = row.get(26)?;
+        let art_source: Option<String> = row.get(29)?;
         let artwork = if let Some(source) = art_source {
             Some(GameArtwork {
                 game_id: row.get(0)?,
-                cover_path: row.get(22)?,
-                hero_path: row.get(23)?,
-                logo_path: row.get(24)?,
-                icon_path: row.get(25)?,
+                cover_path: row.get(25)?,
+                hero_path: row.get(26)?,
+                logo_path: row.get(27)?,
+                icon_path: row.get(28)?,
                 source,
-                updated_at: row.get(27)?,
+                updated_at: row.get(30)?,
             })
         } else {
             None
@@ -48,9 +49,13 @@ pub fn get_all_games(conn: &Connection) -> Result<Vec<Game>> {
             genres: row.get(19)?,
             developer: row.get(20)?,
             esrb_rating: row.get(21)?,
+            runner_type: row.get(22)?,
+            runner_path: row.get(23)?,
+            runner_prefix: row.get(24)?,
             artwork,
         })
     })?;
+
 
     let mut games = Vec::new();
     for game in game_iter {
@@ -63,22 +68,23 @@ pub fn get_game_by_id(conn: &Connection, id: &str) -> Result<Option<Game>> {
     let mut stmt = conn.prepare("
         SELECT g.id, g.source, g.source_app_id, g.title, g.install_path, g.launch_method, g.launch_uri, g.launch_exe, g.launch_args, g.artwork_path, g.status, g.favorite, g.hidden, g.last_played_at, g.playtime_seconds, g.created_at, g.updated_at,
                g.description, g.release_date, g.genres, g.developer, g.esrb_rating,
+               g.runner_type, g.runner_path, g.runner_prefix,
                a.cover_path, a.hero_path, a.logo_path, a.icon_path, a.source, a.updated_at
         FROM games g
         LEFT JOIN game_artwork a ON g.id = a.game_id
         WHERE g.id = ?1
     ")?;
     let mut game_iter = stmt.query_map([id], |row| {
-        let art_source: Option<String> = row.get(26)?;
+        let art_source: Option<String> = row.get(29)?;
         let artwork = if let Some(source) = art_source {
             Some(GameArtwork {
                 game_id: row.get(0)?,
-                cover_path: row.get(22)?,
-                hero_path: row.get(23)?,
-                logo_path: row.get(24)?,
-                icon_path: row.get(25)?,
+                cover_path: row.get(25)?,
+                hero_path: row.get(26)?,
+                logo_path: row.get(27)?,
+                icon_path: row.get(28)?,
                 source,
-                updated_at: row.get(27)?,
+                updated_at: row.get(30)?,
             })
         } else {
             None
@@ -106,6 +112,9 @@ pub fn get_game_by_id(conn: &Connection, id: &str) -> Result<Option<Game>> {
             genres: row.get(19)?,
             developer: row.get(20)?,
             esrb_rating: row.get(21)?,
+            runner_type: row.get(22)?,
+            runner_path: row.get(23)?,
+            runner_prefix: row.get(24)?,
             artwork,
         })
     })?;
@@ -119,8 +128,8 @@ pub fn get_game_by_id(conn: &Connection, id: &str) -> Result<Option<Game>> {
 
 pub fn insert_or_update_game(conn: &Connection, game: &Game) -> Result<()> {
     conn.execute(
-        "INSERT OR REPLACE INTO games (id, source, source_app_id, title, install_path, launch_method, launch_uri, launch_exe, launch_args, artwork_path, status, favorite, hidden, last_played_at, playtime_seconds, created_at, updated_at, description, release_date, genres, developer, esrb_rating)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22)",
+        "INSERT OR REPLACE INTO games (id, source, source_app_id, title, install_path, launch_method, launch_uri, launch_exe, launch_args, artwork_path, status, favorite, hidden, last_played_at, playtime_seconds, created_at, updated_at, description, release_date, genres, developer, esrb_rating, runner_type, runner_path, runner_prefix)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25)",
         params![
             game.id,
             game.source,
@@ -143,9 +152,13 @@ pub fn insert_or_update_game(conn: &Connection, game: &Game) -> Result<()> {
             game.release_date,
             game.genres,
             game.developer,
-            game.esrb_rating
+            game.esrb_rating,
+            game.runner_type,
+            game.runner_path,
+            game.runner_prefix
         ],
     )?;
+
 
     if let Some(ref artwork) = game.artwork {
         insert_or_update_artwork(conn, artwork)?;

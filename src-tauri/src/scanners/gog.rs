@@ -85,6 +85,9 @@ pub fn scan_gog_library(conn: &Connection) -> Result<Vec<Game>, String> {
                         genres: None,
                         developer: None,
                         esrb_rating: None,
+                        runner_type: None,
+                        runner_path: None,
+                        runner_prefix: None,
                     };
 
                     // Save to SQLite

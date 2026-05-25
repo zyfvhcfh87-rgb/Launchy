@@ -40,7 +40,11 @@ export interface Game {
   genres?: string | null;
   developer?: string | null;
   esrb_rating?: string | null;
+  runner_type?: string | null;
+  runner_path?: string | null;
+  runner_prefix?: string | null;
 }
+
 
 export interface LibrarySource {
   id: string;

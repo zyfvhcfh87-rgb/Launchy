@@ -14,8 +14,37 @@ pub fn launch(game: &Game) -> Result<(), String> {
         return Err(format!("Executable not found at: {:?}", full_path));
     }
 
-    let mut cmd = Command::new(&full_path);
-    cmd.current_dir(install_path);
+    let mut cmd = if let Some(ref r_type) = game.runner_type {
+        if r_type == "wine" || r_type == "proton" {
+            // Find custom runner or default to 'wine'
+            let runner = game.runner_path.as_ref()
+                .filter(|p| !p.trim().is_empty())
+                .cloned()
+                .unwrap_or_else(|| "wine".to_string());
+            
+            let mut c = Command::new(&runner);
+            c.current_dir(install_path);
+            
+            // Set WINEPREFIX environment if specified
+            if let Some(ref prefix) = game.runner_prefix {
+                if !prefix.trim().is_empty() {
+                    c.env("WINEPREFIX", prefix);
+                }
+            }
+            
+            // Pass the executable as the first argument to the runner
+            c.arg(&full_path);
+            c
+        } else {
+            let mut c = Command::new(&full_path);
+            c.current_dir(install_path);
+            c
+        }
+    } else {
+        let mut c = Command::new(&full_path);
+        c.current_dir(install_path);
+        c
+    };
 
     if let Some(ref args) = game.launch_args {
         // Simple whitespace split for arguments
@@ -30,3 +59,4 @@ pub fn launch(game: &Game) -> Result<(), String> {
 
     Ok(())
 }
+

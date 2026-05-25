@@ -81,6 +81,10 @@ pub fn init_schema(conn: &Connection) -> Result<(), rusqlite::Error> {
     let _ = conn.execute("ALTER TABLE games ADD COLUMN genres TEXT;", []);
     let _ = conn.execute("ALTER TABLE games ADD COLUMN developer TEXT;", []);
     let _ = conn.execute("ALTER TABLE games ADD COLUMN esrb_rating TEXT;", []);
+    let _ = conn.execute("ALTER TABLE games ADD COLUMN runner_type TEXT;", []);
+    let _ = conn.execute("ALTER TABLE games ADD COLUMN runner_path TEXT;", []);
+    let _ = conn.execute("ALTER TABLE games ADD COLUMN runner_prefix TEXT;", []);
+
 
     Ok(())
 }

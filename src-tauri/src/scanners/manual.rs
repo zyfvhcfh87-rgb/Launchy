@@ -9,6 +9,9 @@ pub fn add_manual_game(
     exe_path: String,
     args: Option<String>,
     artwork_path: Option<String>,
+    runner_type: Option<String>,
+    runner_path: Option<String>,
+    runner_prefix: Option<String>,
 ) -> Result<Game, String> {
     let path = Path::new(&exe_path);
     let install_dir = path.parent().map(|p| p.to_string_lossy().to_string());
@@ -46,6 +49,9 @@ pub fn add_manual_game(
         genres: None,
         developer: None,
         esrb_rating: None,
+        runner_type,
+        runner_path,
+        runner_prefix,
     };
 
     queries::insert_or_update_game(conn, &game)
@@ -67,3 +73,4 @@ pub fn add_manual_game(
 
     Ok(game)
 }
+

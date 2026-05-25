@@ -123,5 +123,8 @@ fn parse_epic_manifest(path: &Path) -> Result<Game, String> {
         genres: None,
         developer: None,
         esrb_rating: None,
+        runner_type: None,
+        runner_path: None,
+        runner_prefix: None,
     })
 }

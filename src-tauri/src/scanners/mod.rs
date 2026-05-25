@@ -7,3 +7,5 @@ pub mod gog;
 pub mod uplay;
 pub mod ea;
 pub mod itch;
+pub mod heroic;
+
