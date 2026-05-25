@@ -52,5 +52,19 @@ pub fn init_schema(conn: &Connection) -> Result<(), rusqlite::Error> {
         [],
     )?;
 
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS game_artwork (
+            game_id TEXT PRIMARY KEY,
+            cover_path TEXT,
+            hero_path TEXT,
+            logo_path TEXT,
+            icon_path TEXT,
+            source TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY(game_id) REFERENCES games(id) ON DELETE CASCADE
+        );",
+        [],
+    )?;
+
     Ok(())
 }

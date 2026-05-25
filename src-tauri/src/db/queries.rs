@@ -1,9 +1,29 @@
 use rusqlite::{params, Connection, Result};
-use crate::models::game::{Game, LibrarySource, ProcessSignature};
+use crate::models::game::{Game, LibrarySource, ProcessSignature, GameArtwork};
 
 pub fn get_all_games(conn: &Connection) -> Result<Vec<Game>> {
-    let mut stmt = conn.prepare("SELECT id, source, source_app_id, title, install_path, launch_method, launch_uri, launch_exe, launch_args, artwork_path, status, favorite, hidden, last_played_at, playtime_seconds, created_at, updated_at FROM games ORDER BY title ASC")?;
+    let mut stmt = conn.prepare("
+        SELECT g.id, g.source, g.source_app_id, g.title, g.install_path, g.launch_method, g.launch_uri, g.launch_exe, g.launch_args, g.artwork_path, g.status, g.favorite, g.hidden, g.last_played_at, g.playtime_seconds, g.created_at, g.updated_at,
+               a.cover_path, a.hero_path, a.logo_path, a.icon_path, a.source, a.updated_at
+        FROM games g
+        LEFT JOIN game_artwork a ON g.id = a.game_id
+        ORDER BY g.title ASC
+    ")?;
     let game_iter = stmt.query_map([], |row| {
+        let art_source: Option<String> = row.get(21)?;
+        let artwork = if let Some(source) = art_source {
+            Some(GameArtwork {
+                game_id: row.get(0)?,
+                cover_path: row.get(17)?,
+                hero_path: row.get(18)?,
+                logo_path: row.get(19)?,
+                icon_path: row.get(20)?,
+                source,
+                updated_at: row.get(22)?,
+            })
+        } else {
+            None
+        };
         Ok(Game {
             id: row.get(0)?,
             source: row.get(1)?,
@@ -22,6 +42,7 @@ pub fn get_all_games(conn: &Connection) -> Result<Vec<Game>> {
             playtime_seconds: row.get(14)?,
             created_at: row.get(15)?,
             updated_at: row.get(16)?,
+            artwork,
         })
     })?;
 
@@ -33,8 +54,28 @@ pub fn get_all_games(conn: &Connection) -> Result<Vec<Game>> {
 }
 
 pub fn get_game_by_id(conn: &Connection, id: &str) -> Result<Option<Game>> {
-    let mut stmt = conn.prepare("SELECT id, source, source_app_id, title, install_path, launch_method, launch_uri, launch_exe, launch_args, artwork_path, status, favorite, hidden, last_played_at, playtime_seconds, created_at, updated_at FROM games WHERE id = ?1")?;
+    let mut stmt = conn.prepare("
+        SELECT g.id, g.source, g.source_app_id, g.title, g.install_path, g.launch_method, g.launch_uri, g.launch_exe, g.launch_args, g.artwork_path, g.status, g.favorite, g.hidden, g.last_played_at, g.playtime_seconds, g.created_at, g.updated_at,
+               a.cover_path, a.hero_path, a.logo_path, a.icon_path, a.source, a.updated_at
+        FROM games g
+        LEFT JOIN game_artwork a ON g.id = a.game_id
+        WHERE g.id = ?1
+    ")?;
     let mut game_iter = stmt.query_map([id], |row| {
+        let art_source: Option<String> = row.get(21)?;
+        let artwork = if let Some(source) = art_source {
+            Some(GameArtwork {
+                game_id: row.get(0)?,
+                cover_path: row.get(17)?,
+                hero_path: row.get(18)?,
+                logo_path: row.get(19)?,
+                icon_path: row.get(20)?,
+                source,
+                updated_at: row.get(22)?,
+            })
+        } else {
+            None
+        };
         Ok(Game {
             id: row.get(0)?,
             source: row.get(1)?,
@@ -53,6 +94,7 @@ pub fn get_game_by_id(conn: &Connection, id: &str) -> Result<Option<Game>> {
             playtime_seconds: row.get(14)?,
             created_at: row.get(15)?,
             updated_at: row.get(16)?,
+            artwork,
         })
     })?;
 
@@ -87,6 +129,11 @@ pub fn insert_or_update_game(conn: &Connection, game: &Game) -> Result<()> {
             game.updated_at
         ],
     )?;
+
+    if let Some(ref artwork) = game.artwork {
+        insert_or_update_artwork(conn, artwork)?;
+    }
+
     Ok(())
 }
 
@@ -234,5 +281,31 @@ pub fn update_artwork_path(conn: &Connection, id: &str, path: Option<String>) ->
     )?;
     Ok(())
 }
+
+pub fn insert_or_update_artwork(conn: &Connection, artwork: &GameArtwork) -> Result<()> {
+    conn.execute(
+        "INSERT OR REPLACE INTO game_artwork (game_id, cover_path, hero_path, logo_path, icon_path, source, updated_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+        params![
+            artwork.game_id,
+            artwork.cover_path,
+            artwork.hero_path,
+            artwork.logo_path,
+            artwork.icon_path,
+            artwork.source,
+            artwork.updated_at
+        ],
+    )?;
+    Ok(())
+}
+
+pub fn delete_artwork(conn: &Connection, game_id: &str) -> Result<()> {
+    conn.execute(
+        "DELETE FROM game_artwork WHERE game_id = ?1",
+        params![game_id],
+    )?;
+    Ok(())
+}
+
 
 

@@ -117,5 +117,6 @@ fn parse_epic_manifest(path: &Path) -> Result<Game, String> {
         playtime_seconds: 0,
         created_at: now.clone(),
         updated_at: now,
+        artwork: None,
     })
 }

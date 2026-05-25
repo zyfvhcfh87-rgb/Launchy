@@ -19,6 +19,9 @@ pub async fn scan_libraries() -> Result<Vec<Game>, String> {
     // Scan Epic
     let _ = epic::scan_epic_library(&conn);
 
+    // Trigger background artwork fetch for Steam games
+    crate::scanners::artwork::trigger_artwork_fetch_background();
+
     queries::get_all_games(&conn).map_err(|e| e.to_string())
 }
 
@@ -149,7 +152,60 @@ pub async fn remove_library_source(id: String) -> Result<(), String> {
 #[tauri::command]
 pub async fn set_game_artwork(game_id: String, artwork_path: Option<String>) -> Result<(), String> {
     let conn = establish_connection().map_err(|e| e.to_string())?;
-    queries::update_artwork_path(&conn, &game_id, artwork_path).map_err(|e| e.to_string())
+
+    if let Some(path_str) = artwork_path {
+        let src_path = std::path::Path::new(&path_str);
+        if !src_path.exists() {
+            return Err("The selected image file does not exist.".to_string());
+        }
+
+        // Determine extension, default to "jpg"
+        let ext = src_path.extension()
+            .map(|e| e.to_string_lossy().to_string())
+            .unwrap_or_else(|| "jpg".to_string());
+
+        // Resolve game artwork directory inside cache
+        let art_dir = crate::scanners::artwork::get_game_artwork_dir(&game_id);
+        let dest_filename = format!("cover.{}", ext);
+        let dest_path = art_dir.join(&dest_filename);
+
+        // Copy selected file to cache
+        std::fs::copy(src_path, &dest_path)
+            .map_err(|e| format!("Failed to copy cover image to cache: {}", e))?;
+
+        let dest_path_str = dest_path.to_string_lossy().to_string();
+
+        // 1. Update the games table's compatibility artwork_path column
+        queries::update_artwork_path(&conn, &game_id, Some(dest_path_str.clone())).map_err(|e| e.to_string())?;
+
+        // 2. Update the game_artwork table
+        let now = chrono::Local::now().to_rfc3339();
+        let game = queries::get_game_by_id(&conn, &game_id)
+            .map_err(|e| e.to_string())?
+            .ok_or_else(|| "Game not found".to_string())?;
+
+        let artwork = crate::models::game::GameArtwork {
+            game_id: game_id.clone(),
+            cover_path: Some(dest_path_str),
+            hero_path: game.artwork.and_then(|a| a.hero_path), // retain existing hero if present
+            logo_path: None,
+            icon_path: None,
+            source: "manual_override".to_string(),
+            updated_at: now,
+        };
+
+        queries::insert_or_update_artwork(&conn, &artwork).map_err(|e| e.to_string())?;
+    } else {
+        // Clear artwork if None is passed
+        queries::update_artwork_path(&conn, &game_id, None).map_err(|e| e.to_string())?;
+        let _ = queries::delete_artwork(&conn, &game_id);
+        
+        // Also delete cache folder if we want to be tidy
+        let art_dir = crate::scanners::artwork::get_game_artwork_dir(&game_id);
+        let _ = std::fs::remove_dir_all(art_dir);
+    }
+
+    Ok(())
 }
 
 #[tauri::command]

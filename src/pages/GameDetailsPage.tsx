@@ -122,11 +122,11 @@ export const GameDetailsPage: React.FC<GameDetailsPageProps> = ({
       <div className="w-full max-w-lg bg-bgPanel border-l border-slate-800/80 h-full flex flex-col shadow-2xl relative overflow-hidden animate-in slide-in-from-right duration-300">
         
         {/* Cover Art Background Blend */}
-        {game.artwork_path ? (
+        {(game.artwork?.hero_path || game.artwork?.cover_path || game.artwork_path) ? (
           <div
-            key={game.artwork_path}
-            className="absolute top-0 inset-x-0 h-80 bg-cover bg-center opacity-20 blur-3xl -z-10 transition-all duration-300"
-            style={{ backgroundImage: `url(${getArtworkUrl(game.artwork_path)})` }}
+            key={game.artwork?.hero_path || game.artwork?.cover_path || game.artwork_path || ""}
+            className="absolute top-0 inset-x-0 h-80 bg-cover bg-center opacity-25 blur-3xl -z-10 transition-all duration-300"
+            style={{ backgroundImage: `url(${getArtworkUrl(game.artwork?.hero_path || game.artwork?.cover_path || game.artwork_path)})` }}
           />
         ) : (
           <div className={`absolute top-0 inset-x-0 h-80 bg-gradient-to-b ${gradientClass} opacity-30 blur-2xl -z-10`} />
@@ -148,14 +148,26 @@ export const GameDetailsPage: React.FC<GameDetailsPageProps> = ({
         {/* Content Body */}
         <div className="flex-grow overflow-y-auto p-6 space-y-6">
           
+          {/* Hero Banner Image */}
+          {game.artwork?.hero_path && (
+            <div className="w-full h-44 rounded-xl overflow-hidden border border-slate-800/60 shadow-md relative flex-shrink-0 select-none bg-slate-950 animate-in fade-in duration-300">
+              <img
+                src={getArtworkUrl(game.artwork.hero_path)}
+                alt={`${game.title} Hero`}
+                className="w-full h-full object-cover animate-in zoom-in-95 duration-500"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-bgPanel/95 via-transparent to-transparent" />
+            </div>
+          )}
+          
           {/* Cover & Main Panel */}
           <div className="flex space-x-6 items-start">
             {/* Artwork */}
             <div className="w-32 aspect-[3/4] bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg relative flex-shrink-0">
-              {game.artwork_path ? (
+              {(game.artwork?.cover_path || game.artwork_path) ? (
                 <img
-                  key={game.artwork_path}
-                  src={getArtworkUrl(game.artwork_path)}
+                  key={game.artwork?.cover_path || game.artwork_path || ""}
+                  src={getArtworkUrl(game.artwork?.cover_path || game.artwork_path)}
                   alt={game.title}
                   className="w-full h-full object-cover absolute inset-0 z-10"
                   onError={(e) => { e.currentTarget.style.display = "none"; }}

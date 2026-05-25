@@ -103,10 +103,10 @@ export const GameCard: React.FC<GameCardProps> = ({
 
       {/* Cover Artwork Container */}
       <div className="relative aspect-[3/4] w-full overflow-hidden bg-slate-950 select-none">
-        {game.artwork_path ? (
+        {(game.artwork?.cover_path || game.artwork_path) ? (
           <img
-            key={game.artwork_path}
-            src={getArtworkUrl(game.artwork_path)}
+            key={game.artwork?.cover_path || game.artwork_path || ""}
+            src={getArtworkUrl(game.artwork?.cover_path || game.artwork_path)}
             alt={game.title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 absolute inset-0 z-10"
             onError={(e) => {

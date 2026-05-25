@@ -19,6 +19,18 @@ pub struct Game {
     pub playtime_seconds: i32,
     pub created_at: String,
     pub updated_at: String,
+    pub artwork: Option<GameArtwork>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GameArtwork {
+    pub game_id: String,
+    pub cover_path: Option<String>,
+    pub hero_path: Option<String>,
+    pub logo_path: Option<String>,
+    pub icon_path: Option<String>,
+    pub source: String,
+    pub updated_at: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

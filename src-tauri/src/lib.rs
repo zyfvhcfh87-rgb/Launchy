@@ -20,6 +20,9 @@ pub fn run() {
             let app_handle = app.handle().clone();
             process_monitor::start_monitor(app_handle);
 
+            // Trigger background artwork fetch for Steam games
+            scanners::artwork::trigger_artwork_fetch_background();
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![

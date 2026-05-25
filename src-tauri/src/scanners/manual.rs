@@ -40,6 +40,7 @@ pub fn add_manual_game(
         playtime_seconds: 0,
         created_at: now.clone(),
         updated_at: now,
+        artwork: None,
     };
 
     queries::insert_or_update_game(conn, &game)

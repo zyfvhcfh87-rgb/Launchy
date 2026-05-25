@@ -6,6 +6,16 @@ export type GameStatus =
   | "needs_client"
   | "error";
 
+export interface GameArtwork {
+  game_id: string;
+  cover_path: string | null;
+  hero_path: string | null;
+  logo_path: string | null;
+  icon_path: string | null;
+  source: string;
+  updated_at: string;
+}
+
 export interface Game {
   id: string;
   source: "steam" | "epic" | "manual";
@@ -24,6 +34,7 @@ export interface Game {
   playtime_seconds: number;
   created_at: string;
   updated_at: string;
+  artwork?: GameArtwork | null;
 }
 
 export interface LibrarySource {
