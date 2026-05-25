@@ -356,5 +356,124 @@ pub fn set_setting(conn: &Connection, key: &str, value: &str) -> Result<()> {
     Ok(())
 }
 
+pub fn insert_playtime_session(
+    conn: &Connection,
+    game_id: &str,
+    playtime_seconds: i32,
+    played_at: &str,
+) -> Result<()> {
+    let id = format!("session_{}", chrono::Local::now().timestamp_millis());
+    conn.execute(
+        "INSERT INTO playtime_sessions (id, game_id, playtime_seconds, played_at) VALUES (?1, ?2, ?3, ?4)",
+        params![id, game_id, playtime_seconds, played_at],
+    )?;
+    Ok(())
+}
+
+pub fn get_playtime_sessions(conn: &Connection) -> Result<Vec<crate::models::game::PlaytimeSession>> {
+    let mut stmt = conn.prepare("
+        SELECT s.id, s.game_id, g.title, COALESCE(a.cover_path, g.artwork_path), s.playtime_seconds, s.played_at
+        FROM playtime_sessions s
+        JOIN games g ON s.game_id = g.id
+        LEFT JOIN game_artwork a ON g.id = a.game_id
+        ORDER BY s.played_at DESC
+        LIMIT 50
+    ")?;
+    
+    let session_iter = stmt.query_map([], |row| {
+        Ok(crate::models::game::PlaytimeSession {
+            id: row.get(0)?,
+            game_id: row.get(1)?,
+            game_title: row.get(2)?,
+            cover_path: row.get(3)?,
+            playtime_seconds: row.get(4)?,
+            played_at: row.get(5)?,
+        })
+    })?;
+
+    let mut sessions = Vec::new();
+    for session in session_iter {
+        sessions.push(session?);
+    }
+    Ok(sessions)
+}
+
+pub fn get_all_categories(conn: &Connection) -> Result<Vec<crate::models::game::Category>> {
+    let mut stmt = conn.prepare("SELECT id, name, created_at FROM categories ORDER BY name ASC")?;
+    let cat_iter = stmt.query_map([], |row| {
+        let cat_id: String = row.get(0)?;
+        let name: String = row.get(1)?;
+        let created_at: String = row.get(2)?;
+        
+        // Fetch all game IDs for this category
+        let mut game_stmt = conn.prepare("SELECT game_id FROM game_categories WHERE category_id = ?1")?;
+        let game_iter = game_stmt.query_map([&cat_id], |r| r.get::<_, String>(0))?;
+        let mut game_ids = Vec::new();
+        for gid in game_iter {
+            game_ids.push(gid?);
+        }
+
+        Ok(crate::models::game::Category {
+            id: cat_id,
+            name,
+            created_at,
+            game_ids,
+        })
+    })?;
+
+    let mut categories = Vec::new();
+    for cat in cat_iter {
+        categories.push(cat?);
+    }
+    Ok(categories)
+}
+
+pub fn create_category(conn: &Connection, name: &str) -> Result<()> {
+    let id = format!("cat_{}", chrono::Local::now().timestamp_millis());
+    let now = chrono::Local::now().to_rfc3339();
+    conn.execute(
+        "INSERT INTO categories (id, name, created_at) VALUES (?1, ?2, ?3)",
+        params![id, name, now],
+    )?;
+    Ok(())
+}
+
+pub fn delete_category(conn: &Connection, id: &str) -> Result<()> {
+    conn.execute("DELETE FROM categories WHERE id = ?1", params![id])?;
+    Ok(())
+}
+
+pub fn add_game_to_category(conn: &Connection, game_id: &str, category_id: &str) -> Result<()> {
+    conn.execute(
+        "INSERT OR IGNORE INTO game_categories (game_id, category_id) VALUES (?1, ?2)",
+        params![game_id, category_id],
+    )?;
+    Ok(())
+}
+
+pub fn remove_game_from_category(conn: &Connection, game_id: &str, category_id: &str) -> Result<()> {
+    conn.execute(
+        "DELETE FROM game_categories WHERE game_id = ?1 AND category_id = ?2",
+        params![game_id, category_id],
+    )?;
+    Ok(())
+}
+
+pub fn get_game_categories(conn: &Connection, game_id: &str) -> Result<Vec<String>> {
+    let mut stmt = conn.prepare("
+        SELECT c.name 
+        FROM categories c
+        JOIN game_categories gc ON c.id = gc.category_id
+        WHERE gc.game_id = ?1
+    ")?;
+    let cat_iter = stmt.query_map([game_id], |row| row.get::<_, String>(0))?;
+    let mut names = Vec::new();
+    for name in cat_iter {
+        names.push(name?);
+    }
+    Ok(names)
+}
+
+
 
 

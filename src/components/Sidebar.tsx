@@ -1,6 +1,6 @@
 import React from "react";
 import { Game } from "../types/game";
-import { LayoutGrid, Heart, EyeOff, Settings, Sparkles, Flame, Clock } from "lucide-react";
+import { LayoutGrid, Heart, EyeOff, Settings, Sparkles, Flame, Clock, Gamepad, Award } from "lucide-react";
 
 interface SidebarProps {
   games: Game[];
@@ -8,8 +8,8 @@ interface SidebarProps {
   setActiveFilter: (filter: string) => void;
   showHidden: boolean;
   setShowHidden: (show: boolean) => void;
-  activeTab: "library" | "settings";
-  setActiveTab: (tab: "library" | "settings") => void;
+  activeTab: "library" | "settings" | "stats" | "tv";
+  setActiveTab: (tab: "library" | "settings" | "stats" | "tv") => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -85,10 +85,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Main Tabs Selection */}
-      <div className="p-4 flex space-x-2 border-b border-slate-800/20">
+      <div className="p-3 flex space-x-1 border-b border-slate-800/20 bg-slate-950/20">
         <button
           onClick={() => setActiveTab("library")}
-          className={`flex-1 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all duration-200 ${
+          className={`flex-1 py-1.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider transition-all duration-200 ${
             activeTab === "library"
               ? "bg-slate-800 text-white shadow-inner"
               : "text-textMuted hover:text-white"
@@ -97,14 +97,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
           Library
         </button>
         <button
+          onClick={() => setActiveTab("stats")}
+          className={`flex-1 py-1.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider transition-all duration-200 ${
+            activeTab === "stats"
+              ? "bg-slate-800 text-white shadow-inner"
+              : "text-textMuted hover:text-white"
+          }`}
+        >
+          Stats
+        </button>
+        <button
           onClick={() => setActiveTab("settings")}
-          className={`flex-1 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all duration-200 ${
+          className={`flex-1 py-1.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider transition-all duration-200 ${
             activeTab === "settings"
               ? "bg-slate-800 text-white shadow-inner"
               : "text-textMuted hover:text-white"
           }`}
         >
-          Settings
+          System
         </button>
       </div>
 
@@ -152,6 +162,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </button>
             </div>
           </div>
+        ) : activeTab === "stats" ? (
+          <div>
+            <span className="px-3 text-[10px] uppercase font-bold text-textMuted/60 tracking-wider">
+              Analytics
+            </span>
+            <div className="mt-2 space-y-1">
+              <button
+                onClick={() => setActiveTab("stats")}
+                className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                  activeTab === "stats"
+                    ? "bg-slate-800 text-white"
+                    : "text-textMuted hover:bg-slate-900/60 hover:text-white"
+                }`}
+              >
+                <Award className="w-4 h-4 text-purple-400" />
+                <span>Habits & Playtime</span>
+              </button>
+            </div>
+          </div>
         ) : (
           <div>
             <span className="px-3 text-[10px] uppercase font-bold text-textMuted/60 tracking-wider">
@@ -172,6 +201,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           </div>
         )}
+      </div>
+
+      {/* TV Mode Activation Button */}
+      <div className="px-4 pb-4">
+        <button
+          onClick={() => setActiveTab("tv")}
+          className="w-full flex items-center justify-center space-x-2 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-xs font-extrabold uppercase tracking-wider text-white shadow-lg shadow-indigo-950/50 transition-all active:scale-95 duration-100 cursor-pointer"
+        >
+          <Gamepad className="w-4 h-4" />
+          <span>Launch TV Mode</span>
+        </button>
       </div>
 
       {/* Library Summary Stats Footer */}

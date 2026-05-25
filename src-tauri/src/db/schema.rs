@@ -75,6 +75,40 @@ pub fn init_schema(conn: &Connection) -> Result<(), rusqlite::Error> {
         [],
     )?;
 
+    // Create playtime sessions table
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS playtime_sessions (
+            id TEXT PRIMARY KEY,
+            game_id TEXT NOT NULL,
+            playtime_seconds INTEGER NOT NULL,
+            played_at TEXT NOT NULL,
+            FOREIGN KEY(game_id) REFERENCES games(id) ON DELETE CASCADE
+        );",
+        [],
+    )?;
+
+    // Create custom categories table
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS categories (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL UNIQUE,
+            created_at TEXT NOT NULL
+        );",
+        [],
+    )?;
+
+    // Create game categories mapping table
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS game_categories (
+            game_id TEXT NOT NULL,
+            category_id TEXT NOT NULL,
+            PRIMARY KEY(game_id, category_id),
+            FOREIGN KEY(game_id) REFERENCES games(id) ON DELETE CASCADE,
+            FOREIGN KEY(category_id) REFERENCES categories(id) ON DELETE CASCADE
+        );",
+        [],
+    )?;
+
     // Run migrations to append rich metadata fields to the games table if they don't exist
     let _ = conn.execute("ALTER TABLE games ADD COLUMN description TEXT;", []);
     let _ = conn.execute("ALTER TABLE games ADD COLUMN release_date TEXT;", []);
@@ -84,7 +118,6 @@ pub fn init_schema(conn: &Connection) -> Result<(), rusqlite::Error> {
     let _ = conn.execute("ALTER TABLE games ADD COLUMN runner_type TEXT;", []);
     let _ = conn.execute("ALTER TABLE games ADD COLUMN runner_path TEXT;", []);
     let _ = conn.execute("ALTER TABLE games ADD COLUMN runner_prefix TEXT;", []);
-
 
     Ok(())
 }

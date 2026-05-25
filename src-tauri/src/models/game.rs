@@ -64,3 +64,21 @@ pub struct ProcessSignature {
     pub created_at: String,
     pub updated_at: String,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PlaytimeSession {
+    pub id: String,
+    pub game_id: String,
+    pub game_title: String,
+    pub cover_path: Option<String>,
+    pub playtime_seconds: i32,
+    pub played_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Category {
+    pub id: String,
+    pub name: String,
+    pub created_at: String,
+    pub game_ids: Vec<String>,
+}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { LibrarySource } from "../types/game";
+import { LibrarySource, PluginInfo } from "../types/game";
 import { RefreshCw, FolderSearch, ShieldCheck, Gamepad2, HelpCircle, HardDrive, Trash2, Plus, FolderPlus, Key, Save, Download, Upload, Database } from "lucide-react";
 
 interface SettingsPageProps {
@@ -35,7 +35,22 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
   const [steamAutoSideload, setSteamAutoSideload] = useState(false);
   const [isSideloading, setIsSideloading] = useState(false);
   const [sideloadMessage, setSideloadMessage] = useState("");
+  const [plugins, setPlugins] = useState<PluginInfo[]>([]);
+  const [isPluginsLoading, setIsPluginsLoading] = useState(false);
+  const [pluginLogs, setPluginLogs] = useState<{ [key: string]: string }>({});
 
+  const loadPlugins = async () => {
+    try {
+      setIsPluginsLoading(true);
+      const { LaunchyPluginAPI } = await import("../utils/plugins");
+      const list = await LaunchyPluginAPI.getPlugins();
+      setPlugins(list);
+    } catch (err) {
+      console.error("Failed to load plugins:", err);
+    } finally {
+      setIsPluginsLoading(false);
+    }
+  };
 
   // Load API Keys on Mount
   useEffect(() => {
@@ -57,6 +72,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
       }
     };
     loadSettings();
+    loadPlugins();
   }, []);
 
   const handleSaveSettings = async (e: React.FormEvent) => {
@@ -121,6 +137,47 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
       alert(`Import failed: ${err}`);
     } finally {
       setIsBackupImporting(false);
+    }
+  };
+  const handleTogglePlugin = async (id: string, enabled: boolean) => {
+    try {
+      const { LaunchyPluginAPI } = await import("../utils/plugins");
+      await LaunchyPluginAPI.togglePlugin(id, enabled);
+      await loadPlugins();
+    } catch (err) {
+      console.error("Failed to toggle plugin:", err);
+    }
+  };
+
+  const handleInstallSamplePlugins = async () => {
+    try {
+      const { LaunchyPluginAPI } = await import("../utils/plugins");
+      const ok = await LaunchyPluginAPI.installSamplePlugins();
+      if (ok) {
+        alert("Sample Python and JavaScript plugins installed successfully! You can inspect them in your Launchy AppData folder.");
+        await loadPlugins();
+      } else {
+        alert("Failed to install sample plugins.");
+      }
+    } catch (err) {
+      console.error("Failed to install sample plugins:", err);
+    }
+  };
+
+  const handleTestExecutePlugin = async (id: string, type: string) => {
+    try {
+      setPluginLogs(prev => ({ ...prev, [id]: "Executing test event..." }));
+      const { LaunchyPluginAPI } = await import("../utils/plugins");
+      
+      const event = type === "metadata_scraper" ? "scrape" : "scan";
+      const payload = type === "metadata_scraper" ? "Hollow Knight" : "";
+      
+      const res = await LaunchyPluginAPI.executePlugin(id, event, payload);
+      setPluginLogs(prev => ({ ...prev, [id]: `SUCCESS:\n${res}` }));
+    } catch (err) {
+      console.error("Failed to execute test plugin:", err);
+      const errMsg = typeof err === "string" ? err : JSON.stringify(err);
+      setPluginLogs(prev => ({ ...prev, [id]: `ERROR:\n${errMsg}` }));
     }
   };
 
@@ -671,6 +728,77 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                 <span>{isBackupImporting ? "IMPORTING BACKUP..." : "IMPORT LIBRARY BACKUP"}</span>
               </button>
             </div>
+          </div>
+
+          {/* Plugin Ecosystem Card */}
+          <div className="bg-bgCard border border-slate-800/80 rounded-2xl p-5 shadow-xl space-y-4 col-span-1 md:col-span-2">
+            <h3 className="text-sm font-bold text-slate-200 flex items-center justify-between border-b border-slate-800/60 pb-3">
+              <div className="flex items-center space-x-2">
+                <ShieldCheck className="w-4.5 h-4.5 text-purple-400" />
+                <span>Extensible Plugin Ecosystem</span>
+              </div>
+              <button
+                type="button"
+                onClick={handleInstallSamplePlugins}
+                className="bg-slate-900/60 hover:bg-slate-800 border border-slate-800 text-[10px] uppercase tracking-wider font-extrabold px-3 py-1.5 rounded-xl text-slate-300 hover:text-white transition-all active:scale-95 duration-100 flex items-center space-x-1 cursor-pointer"
+              >
+                <span>Install Templates</span>
+              </button>
+            </h3>
+            
+            <p className="text-xs text-textMuted leading-relaxed">
+              Expose sandboxed JavaScript or Python plugins in <code>%APPDATA%/Launchy/plugins</code>. Plugins can integrate custom metadata scrapers, local game logs, or API library connectors natively.
+            </p>
+
+            {isPluginsLoading ? (
+              <div className="p-4 text-center text-xs text-textMuted">Loading active plugins list...</div>
+            ) : plugins.length === 0 ? (
+              <div className="p-6 text-center border border-slate-850 border-dashed rounded-xl bg-slate-950/20 text-xs text-textMuted">
+                No custom plugins discovered. Click "Install Templates" to generate working Python and Node.js extension boilerplates instantly!
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {plugins.map((plugin) => (
+                  <div key={plugin.manifest.id} className="p-4 bg-slate-950/40 border border-slate-900 rounded-xl space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                      <div>
+                        <div className="flex items-center space-x-2">
+                          <h4 className="text-xs font-extrabold text-slate-200">{plugin.manifest.name}</h4>
+                          <span className="text-[9px] font-bold bg-slate-900 px-1.5 py-0.5 rounded text-purple-400 uppercase tracking-wider">{plugin.manifest.plugin_type}</span>
+                        </div>
+                        <p className="text-[10px] text-textMuted mt-0.5">{plugin.manifest.description} <span className="font-semibold text-slate-500">v{plugin.manifest.version} by {plugin.manifest.author}</span></p>
+                      </div>
+
+                      <div className="flex items-center space-x-3 flex-shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => handleTestExecutePlugin(plugin.manifest.id, plugin.manifest.plugin_type)}
+                          className="bg-slate-900 hover:bg-slate-850 text-[10px] font-extrabold px-3 py-1.5 rounded-lg border border-slate-800/80 text-slate-300 hover:text-white transition-colors cursor-pointer"
+                        >
+                          Test Run
+                        </button>
+                        
+                        <label className="relative inline-flex items-center cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={plugin.enabled}
+                            onChange={(e) => handleTogglePlugin(plugin.manifest.id, e.target.checked)}
+                            className="sr-only peer"
+                          />
+                          <div className="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-400 after:border-slate-350 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-600 peer-checked:after:bg-white peer-checked:after:border-purple-600"></div>
+                        </label>
+                      </div>
+                    </div>
+
+                    {pluginLogs[plugin.manifest.id] && (
+                      <pre className="p-3 bg-slate-950 rounded-lg text-[10px] font-mono text-slate-400 border border-slate-900/60 overflow-x-auto max-h-32 scrollbar-thin select-text whitespace-pre-wrap">
+                        {pluginLogs[plugin.manifest.id]}
+                      </pre>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Troubleshooting Help */}

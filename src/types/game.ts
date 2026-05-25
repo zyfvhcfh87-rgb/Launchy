@@ -55,3 +55,35 @@ export interface LibrarySource {
   created_at: string;
   updated_at: string;
 }
+
+export interface PluginManifest {
+  id: string;
+  name: string;
+  description: string;
+  version: string;
+  author: string;
+  entry: string;
+  plugin_type: string;
+}
+
+export interface PluginInfo {
+  manifest: PluginManifest;
+  path: string;
+  enabled: boolean;
+}
+
+export interface PlaytimeSession {
+  id: string;
+  game_id: string;
+  game_title: string;
+  cover_path: string | null;
+  playtime_seconds: number;
+  played_at: string;
+}
+
+export interface Category {
+  id: string;
+  name: string;
+  created_at: string;
+  game_ids: string[];
+}

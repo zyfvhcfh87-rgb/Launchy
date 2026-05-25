@@ -167,6 +167,7 @@ pub fn start_monitor(app_handle: AppHandle) {
                                 
                                 // Update DB (playtime & status reset to 'installed')
                                 let _ = queries::update_playtime_and_last_played(&conn, &game.id, elapsed, &now_str);
+                                let _ = queries::insert_playtime_session(&conn, &game.id, elapsed, &now_str);
                                 let _ = queries::update_status(&conn, &game.id, "installed");
                                 
                                 // Emit closure event

@@ -5,6 +5,8 @@ import { LibraryPage } from "./pages/LibraryPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { GameDetailsPage } from "./pages/GameDetailsPage";
 import { AddGameModal } from "./components/AddGameModal";
+import { StatsPage } from "./pages/StatsPage";
+import { TvPage } from "./pages/TvPage";
 
 // Fallback high-fidelity mock data
 const MOCK_GAMES: Game[] = [
@@ -109,7 +111,34 @@ const MOCK_GAMES: Game[] = [
 
 function App() {
   const [games, setGames] = useState<Game[]>(MOCK_GAMES);
-  const [activeTab, setActiveTab] = useState<"library" | "settings">("library");
+  const [activeTab, setActiveTab] = useState<"library" | "settings" | "stats" | "tv">("library");
+
+  // Handle native HTML5 Fullscreen matching with activeTab === "tv"
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement && activeTab === "tv") {
+        setActiveTab("library");
+      }
+    };
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+
+    if (activeTab === "tv") {
+      document.documentElement.requestFullscreen().catch((err) => {
+        console.error("Failed to request fullscreen:", err);
+      });
+    } else {
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch((err) => {
+          console.error("Failed to exit fullscreen:", err);
+        });
+      }
+    }
+
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
+  }, [activeTab]);
   const [activeFilter, setActiveFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [showHidden, setShowHidden] = useState(false);
@@ -480,6 +509,17 @@ function App() {
   // Filter out hidden games unless showHidden toggle is active
   const filteredLibrary = games.filter((g) => showHidden || !g.hidden);
 
+  if (activeTab === "tv") {
+    return (
+      <TvPage
+        games={games}
+        onLaunch={handleLaunchGame}
+        onToggleFavorite={handleToggleFavorite}
+        onExit={() => setActiveTab("library")}
+      />
+    );
+  }
+
   return (
     <div className="flex h-screen w-screen bg-bgDark text-white font-sans overflow-hidden select-none">
       
@@ -507,6 +547,11 @@ function App() {
           onToggleHide={handleToggleHide}
           onOpenFolder={handleOpenFolder}
           onOpenAddModal={() => setIsAddModalOpen(true)}
+        />
+      ) : activeTab === "stats" ? (
+        <StatsPage
+          games={games}
+          onRefreshLibrary={loadGamesFromBackend}
         />
       ) : (
         <SettingsPage

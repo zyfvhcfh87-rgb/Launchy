@@ -5,6 +5,7 @@ pub mod launcher;
 pub mod process_monitor;
 pub mod commands;
 pub mod utils;
+pub mod plugins;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -44,7 +45,18 @@ pub fn run() {
             commands::fetch_game_metadata,
             commands::export_backup,
             commands::import_backup,
-            commands::sideload_manual_games_to_steam
+            commands::sideload_manual_games_to_steam,
+            commands::get_plugins,
+            commands::toggle_plugin,
+            commands::execute_plugin,
+            commands::create_sample_plugin,
+            commands::get_playtime_sessions,
+            commands::get_all_categories,
+            commands::create_category,
+            commands::delete_category,
+            commands::add_game_to_category,
+            commands::remove_game_from_category,
+            commands::get_game_categories
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

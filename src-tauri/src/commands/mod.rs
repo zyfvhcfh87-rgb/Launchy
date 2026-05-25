@@ -287,5 +287,78 @@ pub async fn sideload_manual_games_to_steam() -> Result<(), String> {
     crate::utils::steam_shortcuts::sideload_manual_games_to_steam()
 }
 
+// ==========================================
+// Phase 4: Plugin Ecosystem commands
+// ==========================================
+
+#[tauri::command]
+pub async fn get_plugins() -> Result<Vec<crate::plugins::PluginInfo>, String> {
+    let conn = establish_connection().map_err(|e| e.to_string())?;
+    crate::plugins::list_plugins(&conn)
+}
+
+#[tauri::command]
+pub async fn toggle_plugin(id: String, enabled: bool) -> Result<(), String> {
+    let conn = establish_connection().map_err(|e| e.to_string())?;
+    crate::plugins::toggle_plugin(&conn, &id, enabled)
+}
+
+#[tauri::command]
+pub async fn execute_plugin(id: String, event: String, payload: Option<String>) -> Result<String, String> {
+    let conn = establish_connection().map_err(|e| e.to_string())?;
+    crate::plugins::execute_plugin(&conn, &id, &event, payload.as_deref())
+}
+
+#[tauri::command]
+pub async fn create_sample_plugin() -> Result<(), String> {
+    crate::plugins::create_sample_plugins()
+}
+
+// ==========================================
+// Phase 4: Stats Dashboard & Categories commands
+// ==========================================
+
+#[tauri::command]
+pub async fn get_playtime_sessions() -> Result<Vec<crate::models::game::PlaytimeSession>, String> {
+    let conn = establish_connection().map_err(|e| e.to_string())?;
+    queries::get_playtime_sessions(&conn).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn get_all_categories() -> Result<Vec<crate::models::game::Category>, String> {
+    let conn = establish_connection().map_err(|e| e.to_string())?;
+    queries::get_all_categories(&conn).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn create_category(name: String) -> Result<(), String> {
+    let conn = establish_connection().map_err(|e| e.to_string())?;
+    queries::create_category(&conn, &name).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn delete_category(id: String) -> Result<(), String> {
+    let conn = establish_connection().map_err(|e| e.to_string())?;
+    queries::delete_category(&conn, &id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn add_game_to_category(game_id: String, category_id: String) -> Result<(), String> {
+    let conn = establish_connection().map_err(|e| e.to_string())?;
+    queries::add_game_to_category(&conn, &game_id, &category_id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn remove_game_from_category(game_id: String, category_id: String) -> Result<(), String> {
+    let conn = establish_connection().map_err(|e| e.to_string())?;
+    queries::remove_game_from_category(&conn, &game_id, &category_id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn get_game_categories(game_id: String) -> Result<Vec<String>, String> {
+    let conn = establish_connection().map_err(|e| e.to_string())?;
+    queries::get_game_categories(&conn, &game_id).map_err(|e| e.to_string())
+}
+
 
 
