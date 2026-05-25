@@ -57,7 +57,7 @@ export const GameCard: React.FC<GameCardProps> = ({
       className="group relative flex flex-col bg-bgCard hover:bg-bgCardHover rounded-xl overflow-hidden cursor-pointer game-card-hover border border-slate-800/40"
     >
       {/* Favorite badge & hide quick actions */}
-      <div className="absolute top-2.5 right-2.5 z-10 flex space-x-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+      <div className="absolute top-2.5 right-2.5 z-30 flex space-x-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -96,7 +96,7 @@ export const GameCard: React.FC<GameCardProps> = ({
 
       {/* Persistent heart if favorited */}
       {game.favorite && (
-        <div className="absolute top-2.5 left-2.5 z-10 p-1.5 rounded-full bg-rose-500 text-white shadow-md shadow-rose-950/50 scale-100 group-hover:opacity-0 transition-opacity duration-200">
+        <div className="absolute top-2.5 left-2.5 z-30 p-1.5 rounded-full bg-rose-500 text-white shadow-md shadow-rose-950/50 scale-100 group-hover:opacity-0 transition-opacity duration-200">
           <Heart className="w-3 h-3 fill-current" />
         </div>
       )}
@@ -131,7 +131,7 @@ export const GameCard: React.FC<GameCardProps> = ({
         </div>
 
         {/* Hover Launch Overlay Overlay */}
-        <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-between p-4">
+        <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-between p-4 z-20">
           <div className="text-right">
             <SourceBadge source={game.source} size="sm" />
           </div>
