@@ -34,7 +34,7 @@ When running outside the Tauri desktop shell, the React UI falls back to mock da
 - **Icons**: lucide-react
 - **Backend**: Rust
 - **Storage**: SQLite through `rusqlite`
-- **Native helpers**: `open`, `rfd`, `sysinfo`, `dirs`, `walkdir`, `regex`, `chrono`
+- **Native helpers**: `open`, `rfd`, `sysinfo`, `dirs`, `walkdir`, `regex`, `chrono`, `winreg`
 
 ## Repository Structure
 
@@ -113,12 +113,18 @@ npm run tauri build
 
 ### Steam
 
-Launchy looks for Steam in common Windows install locations:
+Launchy dynamically detects the Steam installation folder by checking the Windows Registry. It inspects:
+
+- `HKEY_CURRENT_USER\Software\Valve\Steam` (checks both the `SteamPath` and `SteamExe` keys)
+- `HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Valve\Steam` (`InstallPath` key)
+- `HKEY_LOCAL_MACHINE\SOFTWARE\Valve\Steam` (`InstallPath` key)
+
+If registry discovery yields nothing, it falls back to checking common default Windows install folders:
 
 - `C:\Program Files (x86)\Steam`
 - `C:\Program Files\Steam`
 
-It reads Steam library folder configuration from `steamapps\libraryfolders.vdf`, scans `appmanifest_*.acf` files, imports title/app ID/install directory metadata, and creates a `steam://rungameid/<appid>` launch URI.
+Once located, it reads the Steam library folder configuration from `steamapps\libraryfolders.vdf`, scans `appmanifest_*.acf` files, imports title/app ID/install directory metadata, and creates a `steam://rungameid/<appid>` launch URI.
 
 Custom Steam library folders can also be added from the Settings page. A custom folder may point at either the Steam library root or the `steamapps` directory.
 
@@ -213,7 +219,6 @@ Steam and Epic ownership, authentication, updates, and DRM remain handled by the
 ## Current Limitations
 
 - Windows is the best-supported platform right now.
-- Steam detection currently relies on common install paths and local VDF files.
 - Epic detection currently relies on local manifest files.
 - Manual launch argument parsing is simple whitespace splitting.
 - There is no packaged release workflow documented yet.
@@ -221,10 +226,8 @@ Steam and Epic ownership, authentication, updates, and DRM remain handled by the
 ## Roadmap Ideas
 
 - Add tests for scanner parsing, database queries, and launcher command construction.
-- Improve Steam path detection through the Windows registry.
 - Add richer metadata and cover lookup.
 - Support import/export or backup of the local library database.
-- Add sorting options for playtime, last played, title, source, and favorites.
 - Add release packaging instructions and published installers.
 - Expand cross-platform scanner support for macOS and Linux.
 
