@@ -5,23 +5,111 @@ use regex::Regex;
 use crate::models::game::{Game, ProcessSignature};
 use crate::db::queries;
 
-// Detect Steam installation folder on Windows
-pub fn detect_steam_path() -> Option<PathBuf> {
-    // Try common installation paths first
+#[cfg(target_os = "windows")]
+use winreg::enums::{HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE};
+#[cfg(target_os = "windows")]
+use winreg::RegKey;
+
+// Validate that the path exists and has a valid libraryfolders.vdf
+fn is_valid_steam_root(path: &Path) -> bool {
+    if !path.exists() {
+        return false;
+    }
+    let libraryfolders = path.join("steamapps").join("libraryfolders.vdf");
+    libraryfolders.exists()
+}
+
+// Non-Windows fallback for registry path detection
+#[cfg(not(target_os = "windows"))]
+fn detect_steam_root_from_registry() -> Option<PathBuf> {
+    None
+}
+
+// Windows implementation for registry path detection
+#[cfg(target_os = "windows")]
+fn detect_steam_root_from_registry() -> Option<PathBuf> {
+    // 1. Check HKCU\Software\Valve\Steam -> SteamPath
+    if let Ok(hkcu) = RegKey::predef(HKEY_CURRENT_USER).open_subkey("Software\\Valve\\Steam") {
+        if let Ok(steam_path) = hkcu.get_value::<String, _>("SteamPath") {
+            let path = PathBuf::from(steam_path.replace("/", "\\"));
+            if is_valid_steam_root(&path) {
+                return Some(path);
+            }
+        }
+        // 2. Fallback in HKCU: check SteamExe (extract parent folder)
+        if let Ok(steam_exe) = hkcu.get_value::<String, _>("SteamExe") {
+            let exe_path = PathBuf::from(steam_exe.replace("/", "\\"));
+            if let Some(parent) = exe_path.parent() {
+                if is_valid_steam_root(parent) {
+                    return Some(parent.to_path_buf());
+                }
+            }
+        }
+    }
+
+    // 3. Check HKLM\SOFTWARE\WOW6432Node\Valve\Steam -> InstallPath
+    if let Ok(hklm_wow) = RegKey::predef(HKEY_LOCAL_MACHINE).open_subkey("SOFTWARE\\WOW6432Node\\Valve\\Steam") {
+        if let Ok(install_path) = hklm_wow.get_value::<String, _>("InstallPath") {
+            let path = PathBuf::from(install_path.replace("/", "\\"));
+            if is_valid_steam_root(&path) {
+                return Some(path);
+            }
+        }
+    }
+
+    // 4. Check HKLM\SOFTWARE\Valve\Steam -> InstallPath
+    if let Ok(hklm) = RegKey::predef(HKEY_LOCAL_MACHINE).open_subkey("SOFTWARE\\Valve\\Steam") {
+        if let Ok(install_path) = hklm.get_value::<String, _>("InstallPath") {
+            let path = PathBuf::from(install_path.replace("/", "\\"));
+            if is_valid_steam_root(&path) {
+                return Some(path);
+            }
+        }
+    }
+
+    None
+}
+
+// Detection from common hardcoded paths
+fn detect_steam_root_from_common_paths() -> Option<PathBuf> {
     let paths = [
         PathBuf::from("C:\\Program Files (x86)\\Steam"),
         PathBuf::from("C:\\Program Files\\Steam"),
     ];
 
+    // Try finding one with a valid libraryfolders.vdf first
+    for path in &paths {
+        if is_valid_steam_root(path) {
+            return Some(path.clone());
+        }
+    }
+
+    // Ultimate fallback: return the first one that exists even without libraryfolders.vdf
     for path in &paths {
         if path.exists() {
             return Some(path.clone());
         }
     }
 
-    // Fallback: Check registry if we wanted to (but we'll keep it simple & fast with standard folders)
     None
 }
+
+// Primary public function for Steam path detection
+pub fn detect_steam_root() -> Option<PathBuf> {
+    // 1. Try registry detection first on Windows
+    if let Some(path) = detect_steam_root_from_registry() {
+        return Some(path);
+    }
+
+    // 2. Fall back to common default folders
+    detect_steam_root_from_common_paths()
+}
+
+// Maintain compatibility wrapper (detect_steam_path)
+pub fn detect_steam_path() -> Option<PathBuf> {
+    detect_steam_root()
+}
+
 
 // Simple VDF parser helper to get a string value by key
 fn get_vdf_value(vdf_content: &str, key: &str) -> Option<String> {
@@ -173,3 +261,24 @@ fn parse_acf_file(path: &Path, library_root: &Path) -> Result<Game, String> {
         updated_at: now,
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_is_valid_steam_root_with_nonexistent() {
+        let path = PathBuf::from("C:\\NonExistentPathThatShouldNotBeHere");
+        assert!(!is_valid_steam_root(&path));
+    }
+
+    #[test]
+    fn test_detect_steam_root_safety() {
+        // This test ensures the detection logic runs without crashing/panicking on any platform
+        let root = detect_steam_root();
+        if let Some(ref path) = root {
+            assert!(path.exists());
+        }
+    }
+}
+
