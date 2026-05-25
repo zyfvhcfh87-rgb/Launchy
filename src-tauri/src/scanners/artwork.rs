@@ -43,16 +43,28 @@ pub fn fetch_steam_artwork(game_id: &str, app_id: &str) -> Option<GameArtwork> {
 
     // 1. Download Cover (library_600x900) if it doesn't exist
     if !cover_dest.exists() {
-        let cover_url = format!("https://cdn.cloudflare.steamstatic.com/steam/apps/{}/library_600x900.jpg", app_id);
-        if let Err(e) = download_file(&cover_url, &cover_dest) {
-            println!("Failed to download Steam cover for app {}: {}", app_id, e);
-            // Fallback to header.jpg if library_600x900 is missing
-            let fallback_url = format!("https://cdn.cloudflare.steamstatic.com/steam/apps/{}/header.jpg", app_id);
-            if download_file(&fallback_url, &cover_dest).is_ok() {
-                has_changes = true;
+        let cover_urls = vec![
+            format!("https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/{}/library_600x900.jpg", app_id),
+            format!("https://steamcdn-a.akamaihd.net/steam/apps/{}/library_600x900_2x.jpg", app_id),
+            format!("https://steamcdn-a.akamaihd.net/steam/apps/{}/library_600x900.jpg", app_id),
+            format!("https://cdn.cloudflare.steamstatic.com/steam/apps/{}/library_600x900.jpg", app_id),
+            format!("https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/{}/header.jpg", app_id),
+            format!("https://steamcdn-a.akamaihd.net/steam/apps/{}/header.jpg", app_id),
+            format!("https://cdn.cloudflare.steamstatic.com/steam/apps/{}/header.jpg", app_id),
+        ];
+
+        let mut success = false;
+        for url in &cover_urls {
+            if download_file(url, &cover_dest).is_ok() {
+                success = true;
+                break;
             }
-        } else {
+        }
+
+        if success {
             has_changes = true;
+        } else {
+            println!("Failed to download Steam cover for app {} from any CDN candidate", app_id);
         }
     } else {
         has_changes = true; // Already exists
@@ -60,16 +72,27 @@ pub fn fetch_steam_artwork(game_id: &str, app_id: &str) -> Option<GameArtwork> {
 
     // 2. Download Hero (library_hero) if it doesn't exist
     if !hero_dest.exists() {
-        let hero_url = format!("https://cdn.cloudflare.steamstatic.com/steam/apps/{}/library_hero.jpg", app_id);
-        if let Err(e) = download_file(&hero_url, &hero_dest) {
-            println!("Failed to download Steam hero for app {}: {}", app_id, e);
-            // Fallback to header.jpg if library_hero is missing
-            let fallback_url = format!("https://cdn.cloudflare.steamstatic.com/steam/apps/{}/header.jpg", app_id);
-            if download_file(&fallback_url, &hero_dest).is_ok() {
-                has_changes = true;
+        let hero_urls = vec![
+            format!("https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/{}/library_hero.jpg", app_id),
+            format!("https://steamcdn-a.akamaihd.net/steam/apps/{}/library_hero.jpg", app_id),
+            format!("https://cdn.cloudflare.steamstatic.com/steam/apps/{}/library_hero.jpg", app_id),
+            format!("https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/{}/header.jpg", app_id),
+            format!("https://steamcdn-a.akamaihd.net/steam/apps/{}/header.jpg", app_id),
+            format!("https://cdn.cloudflare.steamstatic.com/steam/apps/{}/header.jpg", app_id),
+        ];
+
+        let mut success = false;
+        for url in &hero_urls {
+            if download_file(url, &hero_dest).is_ok() {
+                success = true;
+                break;
             }
-        } else {
+        }
+
+        if success {
             has_changes = true;
+        } else {
+            println!("Failed to download Steam hero for app {} from any CDN candidate", app_id);
         }
     } else {
         has_changes = true; // Already exists
