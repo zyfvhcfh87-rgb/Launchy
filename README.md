@@ -7,7 +7,9 @@ The app is currently an early alpha. The core desktop shell, library UI, local S
 ## Highlights
 
 - **Unified Game Library**: Aggregates Steam, Epic Games, GOG Galaxy, Ubisoft Connect, EA App, itch.io, and custom standalone executable entries in a unified responsive dashboard.
-- **Robust Auto-Discovery Scanners**: Crawls Steam `appmanifest_*.acf` files (leveraging Windows Registry-first discovery), GOG registry keys, EA catalog offers, Uplay configurations, itch app dbs, and parses Epic `.item` manifests.
+- **Multiple Library Layout Views**: Offers three premium, responsive library layouts (Large poster cards, compact high-density Medium square cards, and vertical scanning List rows) with seamless button-group toggles and persistent browser-level preferences.
+- **Robust Auto-Discovery Scanners**: Crawls Steam `appmanifest_*.acf` files (leveraging Windows Registry-first discovery), GOG registry keys and GOG `.info` local structures, EA catalog offers and EA `installer.xml` installers, Uplay configurations, itch app dbs, and parses Epic `.item` manifests.
+- **Flexible Custom Scan Directories**: Allows adding secondary installation directories or custom metadata cache paths for all platform launchers (Steam, Epic Games, GOG Galaxy, Ubisoft Connect, EA App, and itch.io), complete with dynamic folder picker scopes and distinct badge indicators.
 - **Widescreen Console TV Mode**: Features a fully immersive television dashboard layout navigable natively using standard Xbox and PlayStation controllers via the HTML5 Gamepad API (or keyboards), complete with smooth horizontal carousels, highlighted spotlight banners, and native HTML5 Fullscreen synchronizations.
 - **Playtime Stats Dashboard**: Visually displays gaming habits with total cumulative stats, a responsive pure-CSS SVG bar chart of daily activity over the past 7 days, favorite genre splits, and scrollable play histories.
 - **Custom Tag Categories Manager**: Allows players to group and organize games into custom collections (e.g. "Backlog", "Completed", "Multiplayer") and map tags dynamically.
@@ -24,8 +26,8 @@ The app is currently an early alpha. The core desktop shell, library UI, local S
 
 Launchy is organized around two main areas:
 
-- **Library**: browse all discovered games, filter by source, search by title, sort with polished dropdown parameters, favorite or hide entries, open details, and launch games.
-- **Settings**: scan libraries, add custom Steam/Epic scan folders, register standalone games, and review local scanner diagnostics.
+- **Library**: browse all discovered games, filter by source, search by title, sort with polished dropdown parameters, toggle Large/Medium/List views, favorite or hide entries, open details, and launch games.
+- **Settings**: scan libraries, add custom scan folders for all platforms, register standalone games, and review local scanner diagnostics.
 
 When running outside the Tauri desktop shell, the React UI falls back to mock data so the interface can still be developed in a browser with Vite.
 
@@ -235,6 +237,8 @@ Steam and Epic ownership, authentication, updates, and DRM remain handled by the
 - **Tauri-Compliant Plugin Loader**: Sandboxed custom JavaScript and Python plugin loader using stdio subprocesses.
 - **Fullscreen TV Console UI**: Widescreen layout navigable natively via Xbox/PlayStation controllers with sliding auto-centered scroll carousels.
 - **Habits Stats Analytics**: Pure-CSS SVG playtime charts, genre progress splits, recent sessions logs, and custom tag category collections.
+- **Multiple Display Layout Options**: Smoothly toggle between Large poster grid, compact square grid, and dense vertical scanning list modes, fully persisted to `localStorage`.
+- **Launcher Custom Folders**: Added manual folder scanner integrations for Steam, Epic Games, GOG Galaxy, Ubisoft Connect, EA App, and itch.io.
 
 ## Future Roadmap
 
