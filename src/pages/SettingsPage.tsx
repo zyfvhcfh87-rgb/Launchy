@@ -33,6 +33,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
   const [isBackupExporting, setIsBackupExporting] = useState(false);
   const [isBackupImporting, setIsBackupImporting] = useState(false);
   const [steamAutoSideload, setSteamAutoSideload] = useState(false);
+  const [discordPresenceEnabled, setDiscordPresenceEnabled] = useState(false);
   const [isSideloading, setIsSideloading] = useState(false);
   const [sideloadMessage, setSideloadMessage] = useState("");
   const [plugins, setPlugins] = useState<PluginInfo[]>([]);
@@ -61,11 +62,13 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
         const twitchId = await invoke<string | null>("get_setting", { key: "igdb_client_id" });
         const twitchSecret = await invoke<string | null>("get_setting", { key: "igdb_client_secret" });
         const autoSideloadVal = await invoke<string | null>("get_setting", { key: "steam_autosideload" });
+        const discordRpcVal = await invoke<string | null>("get_setting", { key: "discord_presence_enabled" });
 
         if (sgKey) setSteamGridKey(sgKey);
         if (twitchId) setIgdbClientId(twitchId);
         if (twitchSecret) setIgdbClientSecret(twitchSecret);
         if (autoSideloadVal === "true") setSteamAutoSideload(true);
+        if (discordRpcVal === "true") setDiscordPresenceEnabled(true);
 
       } catch (err) {
         console.error("Failed to load settings:", err);
@@ -188,6 +191,16 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
       await invoke("set_setting", { key: "steam_autosideload", value: checked ? "true" : "false" });
     } catch (err) {
       console.error("Failed to update auto-sideload setting:", err);
+    }
+  };
+
+  const handleToggleDiscordPresence = async (checked: boolean) => {
+    try {
+      const { invoke } = await import("@tauri-apps/api/core");
+      setDiscordPresenceEnabled(checked);
+      await invoke("set_setting", { key: "discord_presence_enabled", value: checked ? "true" : "false" });
+    } catch (err) {
+      console.error("Failed to update Discord presence setting:", err);
     }
   };
 
@@ -735,6 +748,35 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                   {sideloadMessage}
                 </div>
               )}
+            </div>
+          </div>
+
+          {/* Discord Integration Box */}
+          <div className="bg-bgCard border border-slate-800/80 rounded-2xl p-5 shadow-xl space-y-4 animate-in fade-in duration-300">
+            <h3 className="text-sm font-bold text-slate-200 flex items-center space-x-2">
+              <svg className="w-4.5 h-4.5 text-indigo-400 fill-current" viewBox="0 0 127.14 96.36">
+                <path d="M107.7,8.07A105.15,105.15,0,0,0,77.26,0a77.19,77.19,0,0,0-3.3,6.83A96.67,96.67,0,0,0,52.88,6.83,77.19,77.19,0,0,0,49.58,0,105.15,105.15,0,0,0,19.14,8.07C-3.41,41.74-.9,74.57,14,96.36a107.4,107.4,0,0,0,32.22-16.29,78.29,78.29,0,0,0,6.83-11.14A68.8,68.8,0,0,1,39.9,62.83c1.1-.8,2.19-1.64,3.24-2.5a76.48,76.48,0,0,0,67.6,0c1.05.85,2.14,1.69,3.24,2.5a68.69,68.69,0,0,1-13.14,6.1,79.08,79.08,0,0,0,6.83,11.14,107.18,107.18,0,0,0,32.22,16.29C128.25,74.57,125.64,41.74,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53S36.18,40.36,42.45,40.36,53.84,46,53.84,53,48.72,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.24,60,73.24,53S78.41,40.36,84.69,40.36,96.08,46,96.08,53,91,65.69,84.69,65.69Z"/>
+              </svg>
+              <span>Discord Integration</span>
+            </h3>
+            <p className="text-xs text-textMuted leading-relaxed">
+              Show your friends what you are playing! When enabled, Launchy will update your Discord status with your active game name and playtime. Fully client-side using local IPC socket connection.
+            </p>
+
+            <div className="flex items-center justify-between p-3.5 bg-slate-950/50 border border-slate-900 rounded-xl">
+              <div className="space-y-0.5">
+                <span className="text-xs font-bold text-slate-300 block">Discord Rich Presence</span>
+                <span className="text-[10px] text-textMuted block">Broadcast active game details</span>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={discordPresenceEnabled}
+                  onChange={(e) => handleToggleDiscordPresence(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-400 after:border-slate-350 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600 peer-checked:after:bg-white peer-checked:after:border-blue-600"></div>
+              </label>
             </div>
           </div>
 

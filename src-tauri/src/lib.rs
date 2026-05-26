@@ -6,6 +6,7 @@ pub mod process_monitor;
 pub mod commands;
 pub mod utils;
 pub mod plugins;
+pub mod discord_rpc;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {

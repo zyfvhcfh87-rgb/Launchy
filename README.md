@@ -21,6 +21,7 @@ The app is currently an early alpha. The core desktop shell, library UI, local S
 - **Interactive Details Drawer**: Displays full source metadata, installation directories, responsive cover card visuals, wide horizontal hero graphics (`h-44`), and custom command line argument configurations.
 - **Open Installation Directory Action**: Lets users open game folders in the native OS File Explorer directly from game cards or the details drawer.
 - **Local SQLite Persistence**: Persists all settings, library folders, process signatures, and playtime tracking locally in a unified SQLite database (`launchy.db`). No telemetry, accounts, or launchers are injected.
+- **Discord Rich Presence Integration**: Displays active game details (including manually registered games) and elapsed playtime on Discord via a client-side local IPC socket, completely opt-in and privacy-respecting.
 
 ## Screens and Flows
 
@@ -239,6 +240,7 @@ Steam and Epic ownership, authentication, updates, and DRM remain handled by the
 - **Habits Stats Analytics**: Pure-CSS SVG playtime charts, genre progress splits, recent sessions logs, and custom tag category collections.
 - **Multiple Display Layout Options**: Smoothly toggle between Large poster grid, compact square grid, and dense vertical scanning list modes, fully persisted to `localStorage`.
 - **Launcher Custom Folders**: Added manual folder scanner integrations for Steam, Epic Games, GOG Galaxy, Ubisoft Connect, EA App, and itch.io.
+- **Discord Rich Presence Integration**: Displays active game details (including manually registered games) and elapsed playtime on Discord via a client-side local IPC socket, completely opt-in and privacy-respecting.
 
 ## Future Roadmap
 
@@ -247,7 +249,6 @@ Looking ahead, we plan to continue expanding Launchy's features to make it the u
 - **Retro Console & Emulator Integration**: Auto-scan ROM directories and integrate launchers for RetroArch, PCSX2, Dolphin, and other popular emulators.
 - **Local Recommendations Engine**: A completely privacy-respecting local recommendation system suggesting games from your backlog based on playtime, genres, and play habits.
 - **Custom Game Art Scraping Rules**: Define regex patterns or directory matching rules for local artwork directories to auto-resolve artwork files.
-- **Rich Presence Integration**: Support Discord Rich Presence to show what game (including manual entries) you are currently playing.
 - **Personal Cloud Sync**: Voluntary, encrypted backup/restore sync using personal cloud drives (Google Drive, OneDrive, Nextcloud).
 
 ## Contributing

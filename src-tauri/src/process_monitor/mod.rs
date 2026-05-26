@@ -129,6 +129,16 @@ pub fn start_monitor(app_handle: AppHandle) {
                         // Update DB to 'running'
                         let _ = queries::update_status(&conn, &game.id, "running");
                         
+                        // Update Discord Rich Presence if enabled
+                        let discord_enabled = queries::get_setting(&conn, "discord_presence_enabled")
+                            .unwrap_or(None)
+                            .map(|v| v == "true")
+                            .unwrap_or(false);
+
+                        if discord_enabled {
+                            let _ = crate::discord_rpc::set_activity(&game.title, 0);
+                        }
+
                         // Emit live tauri event
                         let _ = app_handle.emit(
                             "game-status-changed",
@@ -170,6 +180,9 @@ pub fn start_monitor(app_handle: AppHandle) {
                                 let _ = queries::insert_playtime_session(&conn, &game.id, elapsed, &now_str);
                                 let _ = queries::update_status(&conn, &game.id, "installed");
                                 
+                                // Clear Discord Rich Presence
+                                let _ = crate::discord_rpc::clear_activity();
+
                                 // Emit closure event
                                 let _ = app_handle.emit(
                                     "game-status-changed",
