@@ -13,8 +13,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
             // Run database initialization and table schema migration on startup
-            let _conn = db::establish_connection()
-                .expect("Failed to initialize SQLite database connection");
+            db::initialize_database().expect("Failed to initialize SQLite database");
             
             // Start the background process monitoring thread
             let app_handle = app.handle().clone();

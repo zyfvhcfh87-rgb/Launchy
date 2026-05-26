@@ -183,9 +183,14 @@ pub fn import_backup(src_zip_path: &str) -> Result<(), String> {
 
     // 4. Resolve Transaction (Commit or Rollback)
     if success {
-        // Verification step: Try to open the newly imported database to ensure it's not corrupted
+        // Verification step: Try to open and migrate the newly imported database to ensure it's usable
         if let Ok(conn) = rusqlite::Connection::open(&db_path) {
-            if conn.execute("PRAGMA integrity_check;", []).is_ok() {
+            let integrity_ok = conn
+                .query_row("PRAGMA integrity_check;", [], |row| row.get::<_, String>(0))
+                .map(|result| result == "ok")
+                .unwrap_or(false);
+
+            if integrity_ok && crate::db::schema::init_schema(&conn).is_ok() {
                 // Database is perfectly sound! Clean up .bak backups
                 if db_bak_path.exists() {
                     let _ = fs::remove_file(&db_bak_path);
