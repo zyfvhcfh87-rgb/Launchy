@@ -4,6 +4,33 @@ import { getArtworkUrl } from "../utils/artwork";
 import { SourceBadge } from "../components/SourceBadge";
 import { Play, Heart, LogOut, Gamepad, Info } from "lucide-react";
 
+const TV_CATEGORIES = ["all", "favorites", "steam", "epic", "gog", "uplay", "ea", "itch", "manual"];
+
+const getCategoryLabel = (cat: string) => {
+  switch (cat) {
+    case "all":
+      return "All Games";
+    case "favorites":
+      return "Favorites";
+    case "steam":
+      return "Steam";
+    case "epic":
+      return "Epic Games";
+    case "gog":
+      return "GOG Galaxy";
+    case "uplay":
+      return "Ubisoft";
+    case "ea":
+      return "EA App";
+    case "itch":
+      return "itch.io";
+    case "manual":
+      return "Manual";
+    default:
+      return cat;
+  }
+};
+
 interface TvPageProps {
   games: Game[];
   onLaunch: (gameId: string) => void;
@@ -36,6 +63,14 @@ export const TvPage: React.FC<TvPageProps> = ({
         return visibleGames.filter(g => g.source === "steam");
       case "epic":
         return visibleGames.filter(g => g.source === "epic");
+      case "gog":
+        return visibleGames.filter(g => g.source === "gog");
+      case "uplay":
+        return visibleGames.filter(g => g.source === "uplay");
+      case "ea":
+        return visibleGames.filter(g => g.source === "ea");
+      case "itch":
+        return visibleGames.filter(g => g.source === "itch");
       case "manual":
         return visibleGames.filter(g => g.source === "manual");
       default:
@@ -73,17 +108,15 @@ export const TvPage: React.FC<TvPageProps> = ({
           break;
         case "ArrowDown":
           e.preventDefault();
-          // Cycle through categories: all -> favorites -> steam -> epic -> manual
-          const cats = ["all", "favorites", "steam", "epic", "manual"];
-          const nextCatIdx = (cats.indexOf(activeCategory) + 1) % cats.length;
-          setActiveCategory(cats[nextCatIdx]);
+          // Cycle through categories
+          const nextCatIdx = (TV_CATEGORIES.indexOf(activeCategory) + 1) % TV_CATEGORIES.length;
+          setActiveCategory(TV_CATEGORIES[nextCatIdx]);
           setFocusedIndex(0);
           break;
         case "ArrowUp":
           e.preventDefault();
-          const catsUp = ["all", "favorites", "steam", "epic", "manual"];
-          const prevCatIdx = (catsUp.indexOf(activeCategory) - 1 + catsUp.length) % catsUp.length;
-          setActiveCategory(catsUp[prevCatIdx]);
+          const prevCatIdx = (TV_CATEGORIES.indexOf(activeCategory) - 1 + TV_CATEGORIES.length) % TV_CATEGORIES.length;
+          setActiveCategory(TV_CATEGORIES[prevCatIdx]);
           setFocusedIndex(0);
           break;
         case "Enter":
@@ -156,15 +189,13 @@ export const TvPage: React.FC<TvPageProps> = ({
               setFocusedIndex(prev => (prev - 1 + filteredGames.length) % filteredGames.length);
               actionTriggered = true;
             } else if (axisY > 0.5 || dpadDown) {
-              const cats = ["all", "favorites", "steam", "epic", "manual"];
-              const nextCatIdx = (cats.indexOf(activeCategory) + 1) % cats.length;
-              setActiveCategory(cats[nextCatIdx]);
+              const nextCatIdx = (TV_CATEGORIES.indexOf(activeCategory) + 1) % TV_CATEGORIES.length;
+              setActiveCategory(TV_CATEGORIES[nextCatIdx]);
               setFocusedIndex(0);
               actionTriggered = true;
             } else if (axisY < -0.5 || dpadUp) {
-              const catsUp = ["all", "favorites", "steam", "epic", "manual"];
-              const prevCatIdx = (catsUp.indexOf(activeCategory) - 1 + catsUp.length) % catsUp.length;
-              setActiveCategory(catsUp[prevCatIdx]);
+              const prevCatIdx = (TV_CATEGORIES.indexOf(activeCategory) - 1 + TV_CATEGORIES.length) % TV_CATEGORIES.length;
+              setActiveCategory(TV_CATEGORIES[prevCatIdx]);
               setFocusedIndex(0);
               actionTriggered = true;
             } else if (buttonA) {
@@ -277,7 +308,7 @@ export const TvPage: React.FC<TvPageProps> = ({
             LAUNCHY TV
           </span>
           <div className="flex items-center space-x-3 bg-slate-900/40 backdrop-blur-md border border-slate-800/40 p-1.5 rounded-2xl">
-            {["all", "favorites", "steam", "epic", "manual"].map(cat => (
+            {TV_CATEGORIES.map(cat => (
               <button
                 key={cat}
                 onClick={() => { setActiveCategory(cat); setFocusedIndex(0); }}
@@ -287,7 +318,7 @@ export const TvPage: React.FC<TvPageProps> = ({
                     : "text-slate-400 hover:text-white"
                 }`}
               >
-                {cat === "all" ? "All Games" : cat}
+                {getCategoryLabel(cat)}
               </button>
             ))}
           </div>
