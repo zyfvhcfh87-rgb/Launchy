@@ -327,7 +327,7 @@ function App() {
     }
   };
 
-  const handleAddLibrarySource = async (source: "steam" | "epic", path: string) => {
+  const handleAddLibrarySource = async (source: string, path: string) => {
     if (isTauriEnv) {
       try {
         const { invoke } = await import("@tauri-apps/api/core");

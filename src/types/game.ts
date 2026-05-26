@@ -48,7 +48,7 @@ export interface Game {
 
 export interface LibrarySource {
   id: string;
-  source: "steam" | "epic" | "manual";
+  source: string;
   detected_path: string;
   enabled: boolean;
   last_scan_at: string | null;

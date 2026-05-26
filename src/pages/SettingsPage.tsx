@@ -7,7 +7,7 @@ interface SettingsPageProps {
   isScanning: boolean;
   onScanLibraries: () => void;
   onOpenAddModal: () => void;
-  onAddSource: (source: "steam" | "epic", path: string) => void;
+  onAddSource: (source: string, path: string) => void;
   onRemoveSource: (id: string) => void;
   onRefreshLibrary?: () => void;
 }
@@ -21,7 +21,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
   onRemoveSource,
   onRefreshLibrary,
 }) => {
-  const [newSourceType, setNewSourceType] = useState<"steam" | "epic">("steam");
+  const [newSourceType, setNewSourceType] = useState<string>("steam");
   const [newSourcePath, setNewSourcePath] = useState("");
   const [formError, setFormError] = useState("");
 
@@ -212,8 +212,19 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
   const handleBrowseFolder = async () => {
     try {
       const { invoke } = await import("@tauri-apps/api/core");
+      
+      const getBrowseTitle = (type: string) => {
+        if (type === "steam") return "Select Steam Library Folder";
+        if (type === "epic") return "Select Epic Games Manifest Directory";
+        if (type === "gog") return "Select GOG Games Directory";
+        if (type === "uplay") return "Select Ubisoft Connect Configuration Cache Directory";
+        if (type === "ea") return "Select EA Games Directory";
+        if (type === "itch") return "Select itch.io Library or Config Directory";
+        return "Select Library Folder";
+      };
+
       const selected = await invoke<string | null>("select_directory", {
-        title: newSourceType === "steam" ? "Select Steam Library Folder" : "Select Epic Games Manifest Directory"
+        title: getBrowseTitle(newSourceType)
       });
       if (selected) {
         setNewSourcePath(selected);
@@ -449,13 +460,17 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                   <select
                     value={newSourceType}
                     onChange={(e) => {
-                      setNewSourceType(e.target.value as "steam" | "epic");
+                      setNewSourceType(e.target.value);
                       setFormError("");
                     }}
                     className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs font-semibold focus:outline-none focus:border-blue-500 text-white"
                   >
                     <option value="steam">Steam Library</option>
                     <option value="epic">Epic Manifests</option>
+                    <option value="gog">GOG Galaxy</option>
+                    <option value="uplay">Ubisoft Connect</option>
+                    <option value="ea">EA App</option>
+                    <option value="itch">itch.io</option>
                   </select>
                 </div>
                 <div className="sm:col-span-7">
@@ -465,7 +480,21 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                       type="text"
                       value={newSourcePath}
                       onChange={(e) => setNewSourcePath(e.target.value)}
-                      placeholder={newSourceType === "steam" ? "e.g. D:\\SteamLibrary (must contain steamapps)" : "e.g. D:\\EpicGames\\Manifests (folder with .item files)"}
+                      placeholder={
+                        newSourceType === "steam"
+                          ? "e.g. D:\\SteamLibrary (must contain steamapps)"
+                          : newSourceType === "epic"
+                          ? "e.g. D:\\EpicGames\\Manifests (folder with .item files)"
+                          : newSourceType === "gog"
+                          ? "e.g. D:\\GOG Games (folder with GOG game subdirectories containing goggame-*.info)"
+                          : newSourceType === "uplay"
+                          ? "e.g. C:\\Program Files (x86)\\Ubisoft\\Ubisoft Game Launcher\\cache\\configuration\\configurations"
+                          : newSourceType === "ea"
+                          ? "e.g. D:\\EA Games (folder with EA game subdirectories containing __Installer)"
+                          : newSourceType === "itch"
+                          ? "e.g. C:\\Users\\Name\\AppData\\Roaming\\itch (folder containing apps/ or db/sqlite.db)"
+                          : "Enter folder path..."
+                      }
                       className="flex-grow px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs focus:outline-none focus:border-blue-500 placeholder-slate-600 text-white select-text"
                       required
                     />
@@ -511,9 +540,19 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                             <span className={`text-[9px] uppercase font-black px-1.5 py-0.5 rounded select-none ${
                               src.source === "steam"
                                 ? "bg-sky-950/40 border border-sky-900/30 text-sky-400"
+                                : src.source === "epic"
+                                ? "bg-purple-950/40 border border-purple-900/30 text-purple-400"
+                                : src.source === "gog"
+                                ? "bg-violet-950/40 border border-violet-900/30 text-violet-400"
+                                : src.source === "uplay"
+                                ? "bg-cyan-950/40 border border-cyan-900/30 text-cyan-400"
+                                : src.source === "ea"
+                                ? "bg-red-950/40 border border-red-900/30 text-red-400"
+                                : src.source === "itch"
+                                ? "bg-rose-950/40 border border-rose-900/30 text-rose-400"
                                 : "bg-neutral-800 border border-neutral-700 text-neutral-200"
                             }`}>
-                              {src.source}
+                              {src.source === "uplay" ? "ubisoft" : src.source}
                             </span>
                             <span className="text-xs font-semibold text-slate-300 truncate select-text">
                               {src.detected_path}

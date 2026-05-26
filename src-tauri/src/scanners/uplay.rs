@@ -25,7 +25,19 @@ pub fn scan_uplay_library(conn: &Connection) -> Result<Vec<Game>, String> {
     ];
 
     // Standard configurations path
-    let config_dir = PathBuf::from("C:\\Program Files (x86)\\Ubisoft\\Ubisoft Game Launcher\\cache\\configuration\\configurations");
+    let mut config_dirs = vec![PathBuf::from("C:\\Program Files (x86)\\Ubisoft\\Ubisoft Game Launcher\\cache\\configuration\\configurations")];
+
+    // Fetch manually registered Ubisoft custom directories from SQLite
+    if let Ok(custom_sources) = queries::get_library_sources(conn) {
+        for src in custom_sources {
+            if src.source == "uplay" && src.enabled {
+                let path = PathBuf::from(&src.detected_path);
+                if path.exists() && !config_dirs.contains(&path) {
+                    config_dirs.push(path);
+                }
+            }
+        }
+    }
 
     for reg_path in &install_paths {
         if let Ok(installs_key) = RegKey::predef(HKEY_LOCAL_MACHINE).open_subkey(*reg_path) {
@@ -48,7 +60,15 @@ pub fn scan_uplay_library(conn: &Connection) -> Result<Vec<Game>, String> {
                     let mut title = String::new();
                     let mut launch_exe = String::new();
 
-                    let config_file = config_dir.join(&uplay_id);
+                    let mut config_file = PathBuf::new();
+                    for dir in &config_dirs {
+                        let candidate = dir.join(&uplay_id);
+                        if candidate.exists() {
+                            config_file = candidate;
+                            break;
+                        }
+                    }
+
                     if config_file.exists() {
                         if let Ok(content) = fs::read_to_string(&config_file) {
                             // Find title (name: "Assassin's Creed") or (name: Assassin's Creed)
