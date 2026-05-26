@@ -1,10 +1,13 @@
 import React from "react";
 import { Game } from "../types/game";
 import { GameCard } from "./GameCard";
+import { MediumGameCard } from "./MediumGameCard";
+import { ListGameRow } from "./ListGameRow";
 import { Ghost, Sparkles } from "lucide-react";
 
 interface GameGridProps {
   games: Game[];
+  viewMode?: "large" | "medium" | "list";
   onLaunch: (gameId: string) => void;
   onSelect: (game: Game) => void;
   onToggleFavorite: (gameId: string) => void;
@@ -15,6 +18,7 @@ interface GameGridProps {
 
 export const GameGrid: React.FC<GameGridProps> = ({
   games,
+  viewMode = "large",
   onLaunch,
   onSelect,
   onToggleFavorite,
@@ -45,6 +49,45 @@ export const GameGrid: React.FC<GameGridProps> = ({
     );
   }
 
+  // List View Mode
+  if (viewMode === "list") {
+    return (
+      <div className="flex flex-col gap-2.5 max-w-5xl mx-auto select-none animate-in fade-in duration-300">
+        {games.map((game) => (
+          <ListGameRow
+            key={game.id}
+            game={game}
+            onLaunch={onLaunch}
+            onSelect={onSelect}
+            onToggleFavorite={onToggleFavorite}
+            onToggleHide={onToggleHide}
+            onOpenFolder={onOpenFolder}
+          />
+        ))}
+      </div>
+    );
+  }
+
+  // Medium Grid View Mode
+  if (viewMode === "medium") {
+    return (
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4 select-none animate-in fade-in duration-300">
+        {games.map((game) => (
+          <MediumGameCard
+            key={game.id}
+            game={game}
+            onLaunch={onLaunch}
+            onSelect={onSelect}
+            onToggleFavorite={onToggleFavorite}
+            onToggleHide={onToggleHide}
+            onOpenFolder={onOpenFolder}
+          />
+        ))}
+      </div>
+    );
+  }
+
+  // Large Grid View Mode (Default / Original Layout)
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 select-none animate-in fade-in duration-300">
       {games.map((game) => (

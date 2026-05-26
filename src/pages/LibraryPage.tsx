@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Game } from "../types/game";
 import { SearchBar } from "../components/SearchBar";
 import { GameGrid } from "../components/GameGrid";
-import { PlayCircle, Sparkles, ListFilter } from "lucide-react";
+import { PlayCircle, Sparkles, ListFilter, LayoutGrid, Grid, List } from "lucide-react";
 
 interface LibraryPageProps {
   games: Game[];
@@ -30,6 +30,16 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({
   onOpenAddModal,
 }) => {
   const [sortBy, setSortBy] = useState<string>("title-az");
+
+  const [viewMode, setViewMode] = useState<"large" | "medium" | "list">(() => {
+    const saved = localStorage.getItem("launchy_library_view_mode");
+    return (saved as "large" | "medium" | "list") || "large";
+  });
+
+  const handleViewModeChange = (mode: "large" | "medium" | "list") => {
+    setViewMode(mode);
+    localStorage.setItem("launchy_library_view_mode", mode);
+  };
 
   // Filter games based on filter tab & search query
   const getFilteredGames = () => {
@@ -164,6 +174,43 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({
               <option value="recently-added" className="bg-slate-950 text-slate-200">Recently Added</option>
             </select>
           </div>
+
+          {/* View Mode Toggle Switch */}
+          <div className="flex items-center bg-slate-900 border border-slate-800 rounded-xl p-1 select-none flex-shrink-0">
+            <button
+              onClick={() => handleViewModeChange("large")}
+              className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                viewMode === "large"
+                  ? "bg-slate-800 text-blue-400 shadow-inner"
+                  : "text-slate-400 hover:text-slate-200"
+              }`}
+              title="Large Cards View"
+            >
+              <LayoutGrid className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => handleViewModeChange("medium")}
+              className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                viewMode === "medium"
+                  ? "bg-slate-800 text-blue-400 shadow-inner"
+                  : "text-slate-400 hover:text-slate-200"
+              }`}
+              title="Compact Grid View"
+            >
+              <Grid className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => handleViewModeChange("list")}
+              className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                viewMode === "list"
+                  ? "bg-slate-800 text-blue-400 shadow-inner"
+                  : "text-slate-400 hover:text-slate-200"
+              }`}
+              title="List View"
+            >
+              <List className="w-4 h-4" />
+            </button>
+          </div>
           
           <button
             onClick={onOpenAddModal}
@@ -179,6 +226,7 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({
       <main className="flex-grow overflow-y-auto p-8">
         <GameGrid
           games={sortedGames}
+          viewMode={viewMode}
           onLaunch={onLaunch}
           onSelect={onSelect}
           onToggleFavorite={onToggleFavorite}
