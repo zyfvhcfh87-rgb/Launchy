@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Game } from "../types/game";
 import { LayoutGrid, Heart, EyeOff, Settings, Sparkles, Flame, Clock, Gamepad, Award } from "lucide-react";
 
@@ -22,19 +22,46 @@ export const Sidebar: React.FC<SidebarProps> = ({
   setActiveTab,
 }) => {
   // Stats
-  const visibleGames = games.filter(g => !g.hidden);
-  const totalGamesCount = visibleGames.length;
-  const favoriteCount = visibleGames.filter(g => g.favorite).length;
-  const totalPlaytimeSeconds = visibleGames.reduce((acc, curr) => acc + curr.playtime_seconds, 0);
-  const totalPlaytimeHours = Math.round(totalPlaytimeSeconds / 3600);
+  const stats = useMemo(() => {
+    return games.reduce(
+      (acc, game) => {
+        if (game.hidden) {
+          acc.hiddenCount += 1;
+          return acc;
+        }
 
-  const steamCount = visibleGames.filter(g => g.source === "steam").length;
-  const epicCount = visibleGames.filter(g => g.source === "epic").length;
-  const gogCount = visibleGames.filter(g => g.source === "gog").length;
-  const uplayCount = visibleGames.filter(g => g.source === "uplay").length;
-  const eaCount = visibleGames.filter(g => g.source === "ea").length;
-  const itchCount = visibleGames.filter(g => g.source === "itch").length;
-  const manualCount = visibleGames.filter(g => g.source === "manual").length;
+        acc.totalGamesCount += 1;
+        acc.totalPlaytimeSeconds += game.playtime_seconds;
+
+        if (game.favorite) {
+          acc.favoriteCount += 1;
+        }
+
+        acc.sourceCounts[game.source] = (acc.sourceCounts[game.source] || 0) + 1;
+        return acc;
+      },
+      {
+        totalGamesCount: 0,
+        favoriteCount: 0,
+        hiddenCount: 0,
+        totalPlaytimeSeconds: 0,
+        sourceCounts: {} as Record<string, number>,
+      }
+    );
+  }, [games]);
+
+  const totalGamesCount = stats.totalGamesCount;
+  const favoriteCount = stats.favoriteCount;
+  const hiddenCount = stats.hiddenCount;
+  const totalPlaytimeHours = Math.round(stats.totalPlaytimeSeconds / 3600);
+
+  const steamCount = stats.sourceCounts.steam || 0;
+  const epicCount = stats.sourceCounts.epic || 0;
+  const gogCount = stats.sourceCounts.gog || 0;
+  const uplayCount = stats.sourceCounts.uplay || 0;
+  const eaCount = stats.sourceCounts.ea || 0;
+  const itchCount = stats.sourceCounts.itch || 0;
+  const manualCount = stats.sourceCounts.manual || 0;
 
   const filters = [
     { id: "all", label: "All Games", icon: <LayoutGrid className="w-4 h-4" />, count: totalGamesCount },
@@ -202,7 +229,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 }`}
               >
                 <EyeOff className="w-4 h-4" />
-                <span>Show Hidden ({games.filter(g => g.hidden).length})</span>
+                <span>Show Hidden ({hiddenCount})</span>
               </button>
             </div>
           </div>

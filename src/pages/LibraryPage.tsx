@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Game } from "../types/game";
 import { SearchBar } from "../components/SearchBar";
 import { GameGrid } from "../components/GameGrid";
@@ -41,11 +41,13 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({
     localStorage.setItem("launchy_library_view_mode", mode);
   };
 
+  const normalizedSearchQuery = searchQuery.toLowerCase();
+
   // Filter games based on filter tab & search query
-  const getFilteredGames = () => {
+  const filteredGames = useMemo(() => {
     return games.filter((game) => {
       // Search matching
-      const matchesSearch = game.title.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesSearch = game.title.toLowerCase().includes(normalizedSearchQuery);
       if (!matchesSearch) return false;
 
       // Collection filter matching
@@ -71,10 +73,10 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({
           return true;
       }
     });
-  };
+  }, [activeFilter, games, normalizedSearchQuery]);
 
-  const getSortedGames = (filtered: Game[]) => {
-    return [...filtered].sort((a, b) => {
+  const sortedGames = useMemo(() => {
+    return [...filteredGames].sort((a, b) => {
       switch (sortBy) {
         case "title-za":
           return b.title.localeCompare(a.title);
@@ -122,10 +124,7 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({
           return a.title.localeCompare(b.title);
       }
     });
-  };
-
-  const filteredGames = getFilteredGames();
-  const sortedGames = getSortedGames(filteredGames);
+  }, [filteredGames, sortBy]);
 
   // Get human readable collection name
   const getFilterLabel = () => {
