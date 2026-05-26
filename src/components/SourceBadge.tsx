@@ -1,7 +1,7 @@
 import React from "react";
 
 interface SourceBadgeProps {
-  source: "steam" | "epic" | "manual";
+  source: "steam" | "epic" | "gog" | "uplay" | "ea" | "itch" | "manual";
   size?: "sm" | "md";
 }
 
@@ -30,8 +30,48 @@ export const SourceBadge: React.FC<SourceBadgeProps> = ({ source, size = "sm" })
             </svg>
           )
         };
+      case "gog":
+        return {
+          bg: "bg-purple-950/60 border border-purple-800/40 text-purple-400",
+          label: "GOG Galaxy",
+          icon: (
+            <svg className={`${isSm ? "w-3 h-3" : "w-4 h-4"} mr-1.5`} viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm-1.8 4.8h3.6v1.8h-1.8v1.8h1.8v1.8h-3.6V4.8zm0 5.4h3.6v1.8h-1.8v1.8h1.8v1.8h-3.6v-5.4zm0 5.4h3.6v1.8h-1.8v1.8h1.8v1.8h-3.6v-5.4z" />
+            </svg>
+          )
+        };
+      case "uplay":
+        return {
+          bg: "bg-cyan-950/60 border border-cyan-800/40 text-cyan-400",
+          label: "Ubisoft Connect",
+          icon: (
+            <svg className={`${isSm ? "w-3 h-3" : "w-4 h-4"} mr-1.5`} viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 18c-3.313 0-6-2.687-6-6s2.687-6 6-6 6 2.687 6 6-2.687 6-6 6z" />
+            </svg>
+          )
+        };
+      case "ea":
+        return {
+          bg: "bg-orange-950/60 border border-orange-800/40 text-orange-400",
+          label: "EA App",
+          icon: (
+            <svg className={`${isSm ? "w-3 h-3" : "w-4 h-4"} mr-1.5`} viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 0a12 12 0 1 0 12 12A12 12 0 0 0 12 0zm3 15h-6v-2h6v2zm0-4h-6V9h6v2z" />
+            </svg>
+          )
+        };
+      case "itch":
+        return {
+          bg: "bg-rose-950/60 border border-rose-800/40 text-rose-400",
+          label: "itch.io",
+          icon: (
+            <svg className={`${isSm ? "w-3 h-3" : "w-4 h-4"} mr-1.5`} viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 0L2.1 4.5v11.7L12 24l9.9-7.8V4.5L12 0zm5.4 14.4h-3.6v3.6h-3.6v-3.6H6.6v-3.6h3.6V7.2h3.6v3.6h3.6v3.6z" />
+            </svg>
+          )
+        };
       case "manual":
-        default:
+      default:
         return {
           bg: "bg-amber-950/60 border border-amber-800/40 text-amber-400",
           label: "Manual",

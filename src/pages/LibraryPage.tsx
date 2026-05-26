@@ -54,6 +54,14 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({
           return game.source === "steam";
         case "epic":
           return game.source === "epic";
+        case "gog":
+          return game.source === "gog";
+        case "uplay":
+          return game.source === "uplay";
+        case "ea":
+          return game.source === "ea";
+        case "itch":
+          return game.source === "itch";
         case "manual":
           return game.source === "manual";
         case "favorites":
@@ -126,6 +134,14 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({
         return "Steam Library";
       case "epic":
         return "Epic Games Library";
+      case "gog":
+        return "GOG Galaxy Library";
+      case "uplay":
+        return "Ubisoft Connect Library";
+      case "ea":
+        return "EA App Library";
+      case "itch":
+        return "itch.io Library";
       case "manual":
         return "Manual Entries";
       case "favorites":

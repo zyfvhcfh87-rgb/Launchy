@@ -18,7 +18,7 @@ export interface GameArtwork {
 
 export interface Game {
   id: string;
-  source: "steam" | "epic" | "manual";
+  source: "steam" | "epic" | "gog" | "uplay" | "ea" | "itch" | "manual";
   source_app_id: string | null;
   title: string;
   install_path: string | null;
