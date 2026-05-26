@@ -3,6 +3,16 @@ use crate::models::game::{Game, LibrarySource};
 use crate::scanners::{steam, epic, manual, gog, uplay, ea, itch};
 use crate::launcher::{steam_launcher, epic_launcher, manual_launcher, gog_launcher, uplay_launcher, ea_launcher, itch_launcher};
 
+async fn run_blocking<T, F>(task: F) -> Result<T, String>
+where
+    T: Send + 'static,
+    F: FnOnce() -> Result<T, String> + Send + 'static,
+{
+    tauri::async_runtime::spawn_blocking(task)
+        .await
+        .map_err(|e| e.to_string())?
+}
+
 #[tauri::command]
 pub async fn get_games() -> Result<Vec<Game>, String> {
     let conn = establish_connection().map_err(|e| e.to_string())?;
@@ -11,30 +21,32 @@ pub async fn get_games() -> Result<Vec<Game>, String> {
 
 #[tauri::command]
 pub async fn scan_libraries() -> Result<Vec<Game>, String> {
-    let conn = establish_connection().map_err(|e| e.to_string())?;
-    
-    // Scan Steam
-    let _ = steam::scan_steam_library(&conn);
-    
-    // Scan Epic
-    let _ = epic::scan_epic_library(&conn);
+    run_blocking(|| {
+        let conn = establish_connection().map_err(|e| e.to_string())?;
+        
+        // Scan Steam
+        let _ = steam::scan_steam_library(&conn);
+        
+        // Scan Epic
+        let _ = epic::scan_epic_library(&conn);
 
-    // Scan GOG Galaxy
-    let _ = gog::scan_gog_library(&conn);
+        // Scan GOG Galaxy
+        let _ = gog::scan_gog_library(&conn);
 
-    // Scan Ubisoft Connect
-    let _ = uplay::scan_uplay_library(&conn);
+        // Scan Ubisoft Connect
+        let _ = uplay::scan_uplay_library(&conn);
 
-    // Scan EA App
-    let _ = ea::scan_ea_library(&conn);
+        // Scan EA App
+        let _ = ea::scan_ea_library(&conn);
 
-    // Scan itch.io
-    let _ = itch::scan_itch_library(&conn);
+        // Scan itch.io
+        let _ = itch::scan_itch_library(&conn);
 
-    // Trigger background artwork fetch for Steam games
-    crate::scanners::artwork::trigger_artwork_fetch_background();
+        // Trigger background artwork fetch for Steam games
+        crate::scanners::artwork::trigger_artwork_fetch_background();
 
-    queries::get_all_games(&conn).map_err(|e| e.to_string())
+        queries::get_all_games(&conn).map_err(|e| e.to_string())
+    }).await
 }
 
 #[tauri::command]
@@ -269,22 +281,22 @@ pub async fn set_setting(key: String, value: String) -> Result<(), String> {
 
 #[tauri::command]
 pub async fn fetch_game_metadata(game_id: String) -> Result<Game, String> {
-    crate::scanners::metadata::fetch_and_save_metadata(&game_id)
+    run_blocking(move || crate::scanners::metadata::fetch_and_save_metadata(&game_id)).await
 }
 
 #[tauri::command]
 pub async fn export_backup(dest_path: String) -> Result<(), String> {
-    crate::utils::backup::export_backup(&dest_path)
+    run_blocking(move || crate::utils::backup::export_backup(&dest_path)).await
 }
 
 #[tauri::command]
 pub async fn import_backup(src_path: String) -> Result<(), String> {
-    crate::utils::backup::import_backup(&src_path)
+    run_blocking(move || crate::utils::backup::import_backup(&src_path)).await
 }
 
 #[tauri::command]
 pub async fn sideload_manual_games_to_steam() -> Result<(), String> {
-    crate::utils::steam_shortcuts::sideload_manual_games_to_steam()
+    run_blocking(crate::utils::steam_shortcuts::sideload_manual_games_to_steam).await
 }
 
 // ==========================================
@@ -305,13 +317,15 @@ pub async fn toggle_plugin(id: String, enabled: bool) -> Result<(), String> {
 
 #[tauri::command]
 pub async fn execute_plugin(id: String, event: String, payload: Option<String>) -> Result<String, String> {
-    let conn = establish_connection().map_err(|e| e.to_string())?;
-    crate::plugins::execute_plugin(&conn, &id, &event, payload.as_deref())
+    run_blocking(move || {
+        let conn = establish_connection().map_err(|e| e.to_string())?;
+        crate::plugins::execute_plugin(&conn, &id, &event, payload.as_deref())
+    }).await
 }
 
 #[tauri::command]
 pub async fn create_sample_plugin() -> Result<(), String> {
-    crate::plugins::create_sample_plugins()
+    run_blocking(crate::plugins::create_sample_plugins).await
 }
 
 // ==========================================
