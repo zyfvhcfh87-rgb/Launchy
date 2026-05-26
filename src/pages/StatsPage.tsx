@@ -14,6 +14,25 @@ export const StatsPage: React.FC<StatsPageProps> = ({ games, onRefreshLibrary })
   const [selectedCategoryId, setSelectedCategoryId] = useState("");
   const [selectedGameId, setSelectedGameId] = useState("");
 
+
+  const [dayTick, setDayTick] = useState(() => new Date().toDateString());
+
+  useEffect(() => {
+    const scheduleNextDayTick = () => {
+      const now = new Date();
+      const nextMidnight = new Date(now);
+      nextMidnight.setHours(24, 0, 0, 0);
+      const timeoutMs = nextMidnight.getTime() - now.getTime() + 1000;
+
+      return window.setTimeout(() => {
+        setDayTick(new Date().toDateString());
+      }, timeoutMs);
+    };
+
+    const timeoutId = scheduleNextDayTick();
+    return () => window.clearTimeout(timeoutId);
+  }, [dayTick]);
+
   const loadStatsData = async () => {
     try {
       const { invoke } = await import("@tauri-apps/api/core");
@@ -139,7 +158,7 @@ export const StatsPage: React.FC<StatsPageProps> = ({ games, onRefreshLibrary })
       hours: parseFloat((d.seconds / 3600).toFixed(2)),
       rawSeconds: d.seconds
     }));
-  }, [sessions]);
+  }, [sessions, dayTick]);
 
   const maxWeeklyHours = Math.max(...weeklyData.map(d => d.hours), 0.5); // avoid divide by zero
 
