@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useMemo, useState, useEffect, useRef } from "react";
 import { Game } from "../types/game";
 import { getArtworkUrl } from "../utils/artwork";
 import { SourceBadge } from "../components/SourceBadge";
@@ -44,7 +44,7 @@ export const TvPage: React.FC<TvPageProps> = ({
   onToggleFavorite,
   onExit,
 }) => {
-  const visibleGames = games.filter(g => !g.hidden);
+  const visibleGames = useMemo(() => games.filter(g => !g.hidden), [games]);
   
   const [focusedIndex, setFocusedIndex] = useState(0);
   const [activeCategory, setActiveCategory] = useState("all"); // all, favorites, steam, epic, manual
@@ -55,7 +55,7 @@ export const TvPage: React.FC<TvPageProps> = ({
   const buttonCooldown = useRef(false);
 
   // Group games based on selected category
-  const getFilteredGames = () => {
+  const filteredGames = useMemo(() => {
     switch (activeCategory) {
       case "favorites":
         return visibleGames.filter(g => g.favorite);
@@ -76,10 +76,12 @@ export const TvPage: React.FC<TvPageProps> = ({
       default:
         return visibleGames;
     }
-  };
+  }, [activeCategory, visibleGames]);
 
-  const filteredGames = getFilteredGames();
-  const activeGame = filteredGames[focusedIndex] || null;
+  const activeGame = useMemo(
+    () => filteredGames[focusedIndex] || null,
+    [filteredGames, focusedIndex]
+  );
 
   // Real-time Clock
   useEffect(() => {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { Game, PlaytimeSession, Category } from "../types/game";
 import { Clock, Calendar, BarChart2, Tag, Plus, Trash2, HelpCircle, Flame, Gamepad2, Award } from "lucide-react";
 
@@ -95,12 +95,24 @@ export const StatsPage: React.FC<StatsPageProps> = ({ games, onRefreshLibrary })
   };
 
   // calculations
-  const totalPlaytimeSeconds = games.reduce((acc, g) => acc + g.playtime_seconds, 0);
-  const totalPlaytimeHours = (totalPlaytimeSeconds / 3600).toFixed(1);
-  const playedGamesCount = games.filter(g => g.playtime_seconds > 0).length;
+  const gameTotals = useMemo(() => {
+    return games.reduce(
+      (acc, game) => {
+        acc.totalPlaytimeSeconds += game.playtime_seconds;
+        if (game.playtime_seconds > 0) {
+          acc.playedGamesCount += 1;
+        }
+        return acc;
+      },
+      { totalPlaytimeSeconds: 0, playedGamesCount: 0 }
+    );
+  }, [games]);
+
+  const totalPlaytimeHours = (gameTotals.totalPlaytimeSeconds / 3600).toFixed(1);
+  const playedGamesCount = gameTotals.playedGamesCount;
   
   // Weekly playtime grouping (last 7 days)
-  const getWeeklyPlaytimeData = () => {
+  const weeklyData = useMemo(() => {
     const days: { label: string; dateStr: string; seconds: number }[] = [];
     const now = new Date();
     
@@ -127,13 +139,12 @@ export const StatsPage: React.FC<StatsPageProps> = ({ games, onRefreshLibrary })
       hours: parseFloat((d.seconds / 3600).toFixed(2)),
       rawSeconds: d.seconds
     }));
-  };
+  }, [sessions]);
 
-  const weeklyData = getWeeklyPlaytimeData();
   const maxWeeklyHours = Math.max(...weeklyData.map(d => d.hours), 0.5); // avoid divide by zero
 
   // Genre analysis
-  const getGenrePlaytimeData = () => {
+  const topGenres = useMemo(() => {
     const genreMap: { [key: string]: number } = {};
     games.forEach(game => {
       if (game.genres && game.playtime_seconds > 0) {
@@ -152,9 +163,8 @@ export const StatsPage: React.FC<StatsPageProps> = ({ games, onRefreshLibrary })
       }))
       .sort((a, b) => b.rawSeconds - a.rawSeconds)
       .slice(0, 5); // top 5
-  };
+  }, [games]);
 
-  const topGenres = getGenrePlaytimeData();
   const totalGenreSeconds = topGenres.reduce((acc, g) => acc + g.rawSeconds, 0) || 1;
 
   // Format playtime
@@ -176,15 +186,26 @@ export const StatsPage: React.FC<StatsPageProps> = ({ games, onRefreshLibrary })
   };
 
   // Find the currently active category details
-  const activeCategory = categories.find(c => c.id === selectedCategoryId);
-  const gamesInCategory = activeCategory
-    ? games.filter(g => activeCategory.game_ids.includes(g.id))
-    : [];
+  const activeCategory = useMemo(
+    () => categories.find(c => c.id === selectedCategoryId),
+    [categories, selectedCategoryId]
+  );
+
+  const activeCategoryGameIds = useMemo(
+    () => new Set(activeCategory?.game_ids || []),
+    [activeCategory]
+  );
+
+  const gamesInCategory = useMemo(
+    () => activeCategory ? games.filter(g => activeCategoryGameIds.has(g.id)) : [],
+    [activeCategory, activeCategoryGameIds, games]
+  );
 
   // Filter games not already in the active category for the dropdown
-  const gamesAvailableForCategory = activeCategory
-    ? games.filter(g => !activeCategory.game_ids.includes(g.id))
-    : games;
+  const gamesAvailableForCategory = useMemo(
+    () => activeCategory ? games.filter(g => !activeCategoryGameIds.has(g.id)) : games,
+    [activeCategory, activeCategoryGameIds, games]
+  );
 
   return (
     <div className="flex-grow flex flex-col h-screen overflow-hidden bg-bgDark select-none">
