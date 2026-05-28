@@ -3,6 +3,7 @@ pub mod queries;
 
 use std::fs;
 use std::path::PathBuf;
+use std::time::Duration;
 use rusqlite::Connection;
 
 pub fn get_db_path() -> PathBuf {
@@ -17,6 +18,11 @@ pub fn get_db_path() -> PathBuf {
 pub fn establish_connection() -> Result<Connection, rusqlite::Error> {
     let db_path = get_db_path();
     let conn = Connection::open(db_path)?;
-    schema::init_schema(&conn)?;
+    conn.busy_timeout(Duration::from_secs(5))?;
     Ok(conn)
+}
+
+pub fn initialize_database() -> Result<(), rusqlite::Error> {
+    let conn = establish_connection()?;
+    schema::init_schema(&conn)
 }
